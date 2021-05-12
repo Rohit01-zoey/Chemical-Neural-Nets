@@ -39,7 +39,10 @@ using DifferentialEquations
 
 NNForce = Chain(x -> [x],
                 Dense(1, 32, tanh),
-                Dense(32, 1)
+                Dense(32, 1),
                 first)
+k = 2
+random_pos = [2rand() - 1 for _ in 1:100]
+loss_ode() = sum(abs2, NNForce(x) - (-k*x) for x in random_pos)
 
-loss() = mean(abs2())
+loss_ode()
