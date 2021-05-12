@@ -50,6 +50,18 @@ grads[W]
 grads[b]
 
 m = Dense(10, 5)
-m
 params(m)
 
+x = rand(Float32, 10)
+
+m = Chain(Dense(10, 5, relu), Dense(5, 2), softmax)
+
+l(x) = Flux.Losses.crossentropy(m(x), [0.5, 0.5])
+grads = gradient(params(m)) do 
+    l(x)
+    
+end
+
+for p in params(m)
+    println(grads[p])
+end
