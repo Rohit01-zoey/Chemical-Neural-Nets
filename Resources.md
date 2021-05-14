@@ -4,3 +4,4 @@
 
 # DifferntialEquations.jl
 * [Solved Problems for solving DE](https://tutorials.sciml.ai/html/exercises/01-workshop_exercises.html)
+   - [Solutions](https://tutorials.sciml.ai/html/exercises/02-workshop_solutions.html)
