@@ -62,3 +62,49 @@ plot(sol)
 plot(sol, vars = (1,2 ,3))
 plot(sol, vars = (1, 3))
 plot(sol, vars = (0, 2))
+
+function mult_noise!(du, u, p, t)
+    r, w = u
+    du[1] = 0.3*r
+    du[2] = 0.3*w
+    
+end
+prob = SDEProblem(latka_votlerra!,mult_noise!, u₀, t_span, p)
+sol = solve(prob)
+
+plot(sol)
+
+eb = EnsembleProblem(prob)
+sol = solve(eb,trajectories = 100)
+
+plot(sol)
+summ = EnsembleSummary(sol)
+plot(summ)
+
+τ = 1.0
+function latka_votlerra!(du, u,h, p ,t)
+    r, w = u
+    delay_r = h(p, t-τ, idxs = 1)
+    α, β, γ, δ = p
+    du[1] = dr = α*delay_r - β*r*w
+    du[2] = dw = γ*r*w - δ*w
+end
+u₀ = [1.0, 1.0]
+
+t_span = (0.0, 10.0)
+h(p, t) = [1.0, 1.0]
+h(p, t; idxs = 1) = 1.0
+p = [1.5, 1.0, 3.0, 1.0]
+
+h(p, -0.5)
+
+prob = DDEProblem(latka_votlerra!, u₀,h, t_span, p, constant_lag = [τ])
+sol = solve(prob)
+
+plot(sol)
+#* Call back function
+die_r_condition(u, t, integrator) = u[2] = 4
+die_r_affect!(integator) = integator.u[2] -= 1
+cb = ContinuousCallback(die_r_condition, die_r_affect!)
+sol = solve(prob, callback = cb)
+plot(sol)
