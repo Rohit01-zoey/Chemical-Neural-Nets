@@ -49,13 +49,23 @@ is an x ∈ X which is mapped onto itself, that is
 T(x) = x.
 
 ---
-Banach’s Fixed Point Theorem is an existence and uniqueness theorem for fixed
-points of certain mappings. As we will see from the proof, it also provides us with
-a constructive procedure for getting better and better approximations of the fixed
-point. This procedure is called iteration; we start by choosing an arbitrary x<sub>0</sub> in a
+
+* Banach’s Fixed Point Theorem is an existence and uniqueness theorem for fixed points of certain mappings.
+*  As we will see from the proof, it also provides us with a constructive procedure for getting better and better approximations of the fixed
+point. 
+   - This procedure is called iteration; we start by choosing an arbitrary x<sub>0</sub> in a
 given set, and calculate recursively a sequence x<sub>1</sub>, x<sub>2</sub>, x<sub>3</sub>, . . . by letting: 
 <p style="text-align: center;">
 x<sub>n+1</sub> = T x<sub>n</sub> , n = 0, 1, 2 . . .
 </p>
 
+---
+## Contraction Mapping
+Let (X,d) be a metric space (X is the set of points we are thinking of, here the real numbers. d is a distance function). 
+
+Function 'f' is a *contraction mapping* if
+
+           d(f(x),f(y)) ≤ q d(x,y) where q<1
+
+That is, if applying f always decreases the distance.
 
