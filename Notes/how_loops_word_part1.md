@@ -116,3 +116,12 @@ Function 'f' is a *contraction mapping* if
 
 That is, if applying f always decreases the distance.
 
+---
+
+## Banach Fixed Point Theorem statement and Proof
+Refer [Banach Fixed Point thm](https://wiki.math.ntnu.no/_media/tma4145/2020h/banach.pdf)
+
+---
+
+
+
