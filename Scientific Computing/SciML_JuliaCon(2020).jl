@@ -108,3 +108,4 @@ die_r_affect!(integator) = integator.u[2] -= 1
 cb = ContinuousCallback(die_r_condition, die_r_affect!)
 sol = solve(prob, callback = cb)
 plot(sol)
+
