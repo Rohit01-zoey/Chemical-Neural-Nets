@@ -123,5 +123,18 @@ Refer [Banach Fixed Point thm](https://wiki.math.ntnu.no/_media/tma4145/2020h/ba
 
 ---
 
+## Multivariable systems
 
+Refer [Link](https://mitmath.github.io/18337/lecture4/dynamical_systems.html) Section :- Multivariable systems.
+
+---
+---
+## ! DOUBT in
+1. Understanding Delayed Systems
+2. Stochastic Dynamical Systems
+
+---
+---
+
+## 
 
