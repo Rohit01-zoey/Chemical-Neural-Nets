@@ -99,3 +99,30 @@ function inner_alloc(A,B)
 
   #* We still get 2 allocations 1 for matrix C and 1 for return value
 
+  function f(A, B)
+    sum([A .+ B for k in 1:10])
+  end
+  @btime f(A, B)
+
+  #? Any better way?
+
+ function ff(A, B)
+    sum([A + B for k in 1:10])
+  end
+  @btime ff(A, B)
+
+  #? Any better way?
+
+  function fff(A, B)
+    C = similar(A)
+    for _ in 1:10
+        C .+= A .+ B
+    end 
+    C
+  end
+  @btime fff(A, B) 
+
+  #SIDENOTE 2D arrays can be indexed even with a single number
+  #! Recall the linear model for a 2d array --> single idex wld refer to thus
+
+  
