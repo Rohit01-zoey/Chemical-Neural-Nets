@@ -33,8 +33,10 @@ function inner_cols!(C,A,B)
     end
   end
   @btime inner_alloc!(C,A,B)
+#! Here we have heap allocations and these are costly hence inner_alloc take a lot of time
 
 
+#* scalars size known from before
   function inner_noalloc!(C,A,B)
     for j in 1:100, i in 1:100
       val = A[i,j] + B[i,j]
@@ -125,4 +127,3 @@ function inner_alloc(A,B)
   #SIDENOTE 2D arrays can be indexed even with a single number
   #! Recall the linear model for a 2d array --> single idex wld refer to thus
 
-  
