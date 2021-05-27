@@ -220,3 +220,76 @@ end
 #? Thus vectorization  is fast because it utilises code from C.
 
 #! the dot operator does a bound check at the beginning and then runs the loop and hence it still takes a little more time as compares to @inbounds
+
+A[50, 50] #not heap allocated since size is known
+
+@btime A[1:5, 1:5]
+@btime @view A[1:5, 1:5]
+
+#! julia when it git compiles is a fucntions calls so when we put everything in a function it runs its optimization on the entire function
+#! if we were to call it directly in the repl it git compiles each individual function and hence to write faster code and benchmark things we must write them in function format.
+
+function ff2(A)
+  A[1:5, 1:5]
+end
+function ff3(A)
+  @view A[1:5, 1:5]
+end
+
+@btime ff2(A)
+@btime ff3(A)
+#notice that ff3 takes very less memory 
+# @view creates a pointer to that piece of memory (the same as A in this case)
+#therefore if we change anything in the view A also gets changed egs
+A
+E = @view A[1:5, 1:5]
+E[1,1]  = 2
+A
+#on the other hand the conventional slicing creates a new array 
+A
+E_slice =  A[1:5, 1:5]
+E_slice[1,1]  = 4
+A
+
+
+
+using LinearAlgebra, BenchmarkTools
+function alloc_timer(n)
+    A = rand(n,n)
+    B = rand(n,n)
+    C = rand(n,n)
+    t1 = @belapsed $A .* $B
+    t2 = @belapsed ($C .= $A .* $B)
+    t1,t2
+end
+ns = 2 .^ (2:11)
+res = [alloc_timer(n) for n in ns]
+alloc   = [x[1] for x in res]
+noalloc = [x[2] for x in res]
+
+using Plots
+plot(ns,alloc,label="=",xscale=:log10,yscale=:log10,legend=:bottomright,
+     title="Micro-optimizations matter for BLAS1")
+plot!(ns,noalloc,label=".=")
+
+
+
+
+
+function alloc_timer(n)
+  A = rand(n,n)
+  B = rand(n,n)
+  C = rand(n,n)
+  t1 = @belapsed $A*$B
+  t2 = @belapsed mul!($C,$A,$B)
+  t1,t2
+end
+ns = 2 .^ (2:7)
+res = [alloc_timer(n) for n in ns]
+alloc   = [x[1] for x in res]
+noalloc = [x[2] for x in res]
+
+using Plots
+plot(ns,alloc,label="*",xscale=:log10,yscale=:log10,legend=:bottomright,
+   title="Micro-optimizations only matter for small matmuls")
+plot!(ns,noalloc,label="mul!")
