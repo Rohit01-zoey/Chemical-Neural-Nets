@@ -135,6 +135,88 @@ function inner_alloc(A,B)
   end
   @btime fff(A, B) 
 
-  #SIDENOTE 2D arrays can be indexed even with a single number
-  #! Recall the linear model for a 2d array --> single idex wld refer to thus
+  #fff is faster since we have allocated one matrix already (heap allocated) and then broadcasting it
 
+
+  #SIDENOTE 2D arrays can be indexed even with a single number
+  #! Recall the linear model for a 2d array --> single idex wld refer to this
+
+  function dotstar(A, B, C)
+    tmp = similar(A)
+    for i in 1:length(A)
+        tmp[i] = A[i] * B[i]
+    end
+    tmp2 = similar(C)
+    for i in 1:length(C)
+        tmp2[i] = tmp[i]*C[i]
+    end
+end
+@btime dotstar(A, B, C)
+
+
+function dotstar2(A, B, C)
+    tmp = similar(A)
+    for i in 1:length(A)
+        tmp[i] = A[i] * B[i] * C[i]
+    end
+end
+@btime dotstar2(A, B, C)
+#notice that the memory used for the dotstar2 is almost half this is the benefit of loop fusion
+#when julia comes across a . operator it git compiles and creates a new function 
+#thus under the hood the . operator is fusing many of the loops making it much  faster and less memory intesive
+
+
+function unfused(A,B,C)
+    tmp = A .+ B
+    tmp .+ C
+  end
+@btime unfused(A,B,C)
+
+fused(A,B,C) = A .+ B .+ C
+@btime fused(A,B,C);
+#In the above fused function we still have 2 allocations what id we dont want any allocations
+
+#! we do the following that is use a mutating function
+
+D = similar(A)
+fused!(D,A,B,C) = (D .= A .+ B .+ C)
+@btime fused!(D,A,B,C);
+
+#? Our final aim is to use as many less loops as possible and allocate as less memory as  possible
+#? Thus fusing as many loops as possible using the . operator
+tmp = zeros(100,100)
+function vectorized!(tmp, A, B, C)
+    tmp .= A .* B.* C 
+    nothing
+end
+
+function non_vectorized!(tmp, A, B, C)
+    for i in 1:length(tmp)
+        tmp[i] = A[i] * B[i] * C[i]
+    end
+     nothing
+end
+
+function non_vectorized!(tmp, A, B, C)
+    for i in 1:length(tmp)
+        tmp[i] = A[i] * B[i] * C[i]
+    end
+     nothing
+end
+
+function non_vectorized_faster!(tmp, A, B, C)
+    @inbounds for i in 1:length(tmp)
+        tmp[i] = A[i] * B[i] * C[i]
+    end
+     nothing
+end
+
+@btime vectorized!(tmp, A, B, C)
+@btime non_vectorized!(tmp, A, B, C)
+@btime non_vectorized_faster!(tmp, A, B, C)
+#? These times tell us that checking for bounds is quite expensive and hence a code can be made faster by removing these restrictions
+#? in other high level languages like python etc you are not allowed to change values outsife the bounds of the array coz this may lead to changing of data the computer might be using 
+#? however we are allowed to change such values in C.
+#? Thus vectorization  is fast because it utilises code from C.
+
+#! the dot operator does a bound check at the beginning and then runs the loop and hence it still takes a little more time as compares to @inbounds
