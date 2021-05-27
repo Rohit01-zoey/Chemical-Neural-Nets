@@ -187,8 +187,27 @@ function solve_system_save_copy(f,u0,p,n)
   #! u[i+1] = du copies 'du' by reference thus u[i+1] and du point to the same object. therefore any changes in du reflect in u[i+1] and vice versa
   #! on the other hand copy makes a new object of the same type as the object which 'du' refers to, and makes 'u[i+1]' refer to it. therefore now we have 2 different objects
   #! for each field of the objects if it is immutable then it will be copied by value else if it is mutable then copied by reference 
-  
 
+function solve_system_mutate(f,u0,p,n)
+  # create work buffers
+  du = similar(u0); u = copy(u0)
+  # non-allocating loop
+  for i in 1:n-1
+    f(du,u,p)
+    u,du = du,u
+  end
+  u
+end
+solve_system_mutate(lorenz,[1.0,0.0,0.0],p,1000)
+@btime solve_system(lorenz,[1.0,0.0,0.0],p,1000)
+@btime solve_system_mutate(lorenz,[1.0,0.0,0.0],p,1000)
+#* notice that this takes only half the time 6 us implying that we should be careful about what vectors we want
+#! we should save only the data we wamt to save along with a good caching arch.
+
+#now we can use static arrays they have fixed size and are stack allocated 
+#more like python tuple 
+#notice that they are immutable objects but that isnt a problem since they are stack allocated and hence we can create 
+#bunches of them without creating different pointers to different locations
 
   using StaticArrays
 function lorenz(u,p)
@@ -208,7 +227,47 @@ function solve_system_save(f,u0,p,n)
   u
 end
 solve_system_save(lorenz,@SVector[1.0,0.0,0.0],p,1000)
-using BenchmarkTools
+
 @btime solve_system_save(lorenz,@SVector[1.0,0.0,0.0],p,1000)
 
 #* Puts everythong on the stack and then finally allocates the value.
+# this is very fast:-- we can make the transformation from a vector of static vectors to a matrix and vice versa
+# without creating any new arrays 
+
+
+#? now we remove the error bounds too they since errors are again conditionsals and hence are expensive 
+function lorenz(u,p)
+  α,σ,ρ,β = p
+  @inbounds begin
+    du1 = u[1] + α*(σ*(u[2]-u[1]))
+    du2 = u[2] + α*(u[1]*(ρ-u[3]) - u[2])
+    du3 = u[3] + α*(u[1]*u[2] - β*u[3])
+  end
+  @SVector [du1,du2,du3]
+end
+function solve_system_save(f,u0,p,n)
+  u = Vector{typeof(u0)}(undef,n)
+  @inbounds u[1] = u0
+  @inbounds for i in 1:n-1
+    u[i+1] = f(u[i],p)
+  end
+  u
+end
+solve_system_save(lorenz,@SVector[1.0,0.0,0.0],p,1000)
+@btime solve_system_save(lorenz,@SVector[1.0,0.0,0.0],p,1000)
+# a bit faster
+
+@btime solve_system(lorenz,@SVector([1.0,0.0,0.0]),p,1000)
+
+
+#! an even faster approach would be a non allocating operations
+# that is the user provides the matrix
+function solve_system_save!(u,f,u0,p,n)
+  @inbounds u[1] = u0
+  @inbounds for i in 1:length(u)-1
+    u[i+1] = f(u[i],p)
+  end
+  u
+end
+u = Vector{typeof(@SVector([1.0,0.0,0.0]))}(undef,1000)
+@btime solve_system_save!(u,lorenz,@SVector([1.0,0.0,0.0]),p,1000)
