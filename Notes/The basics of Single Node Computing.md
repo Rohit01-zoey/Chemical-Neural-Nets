@@ -8,9 +8,8 @@ Ref - [site](https://medium.com/@itIsMadhavan/concurrency-vs-parallelism-a-brief
 * Concurrency means that an application is making progress on more than one task at the same time (concurrently). Well, if the computer only has one CPU the application may not make progress on more than one task at exactly the same time, but more than one task is being processed at a time inside the application. It does not completely finish one task before it begins the next.
 * Let's take an example in real life: There’s a challenge that requires you to both eat a whole huge cake and sing a whole song. You’ll win if you’re the fastest who sings the whole song and finishes the cake. So the rule is that you sing and eat simultaneously, How you do that does not belong to the rule. You can eat the whole cake, then sing the whole song, or you can eat half a cake, then sing half a song, then do that again, etc.
 * Concurrency means executing multiple tasks at the same time but not necessarily simultaneously. There are two tasks executing concurrently, but those are run in a 1-core CPU, so the CPU will decide to run a task first and then the other task or run half a task and half another task, etc. Two tasks can start, run, and complete in overlapping time periods i.e Task-2 can start even before Task-1 gets completed. It all depends on the system architecture.
-```
-Concurrency means executing multiple tasks at the same time but not necessarily simultaneously.
-```
+>Concurrency means executing multiple tasks at the same time but not necessarily simultaneously.
+
 
 ---
 ## Parallelism
@@ -23,9 +22,9 @@ Concurrency means executing multiple tasks at the same time but not necessarily 
 
 ## What is the difference between parallel programming and concurrent programming?
 - For instance, *The Art of Concurrency* defines the difference as follows:
-```
-A system is said to be concurrent if it can support two or more actions in progress at the same time. A system is said to be parallel if it can support two or more actions executing simultaneously.
-```
+
+>A system is said to be concurrent if it can support two or more actions in progress at the same time. A system is said to be parallel if it can support two or more actions executing simultaneously.
+
 * The key concept and difference between these definitions is the phrase **“in progress.”**
 
 * This definition says that, in concurrent systems, multiple actions can be in progress (may not be executed) at the same time. Meanwhile, multiple actions are simultaneously executed in parallel systems. 
@@ -116,3 +115,38 @@ good image in mind to have for a process
 
 ---
 
+## Types of concurrency
+* Blocking vs non blocking : Whether the thread will periodically poll for whether that task is complete, or whether it should wait for the task to complete before doing anything else
+
+* Synchronous vs Asynchronus: Whether to execute the operation as initiated by the program or as a response to an event from the kernel.
+
+
+>I/O operations cause a privileged context switch, allowing the task which is handling the I/O to directly be switched to in order to continue actions.
+
+---
+---
+## Event loop
+
+The Main Event Loop
+Julia, along with other languages with a runtime (Javascript, Go, etc.) at its core is a single process running an event loop. This event loop has is the main thread, and "Julia program" or "script" that one is running is actually ran in a green thread that is controlled by the main event loop. The event loop takes over to look for other work whenever the program hits a yield point. More yield points allows for more aggressive task switching, while it also means more switches to the event loop which suspends the numerical task, i.e. making it slower. Thus yielding shouldn't interrupt the main loop!
+
+This is one area where languages can wildly differ in implementation. Languages structured for lots of I/O and input handling, like Javascript, have yield points at every line (it's an interpreted language and therefore the interpreter can always take control). In Julia, the yield points are minimized. The common yield points are allocations and I/O (println). This means that a tight non-allocating inner loop will not have any yield points and will be a thread that is not interruptable. While this is great for numerical performance, it is something to be aware of.
+
+Side effect: if you run a long tight loop and wish to exit it, you may try Ctrl + C and see that it doesn't work. This is because interrupts are handled by the event loop. The event loop is never re-entered until after your tight numerical loop, and therefore you have the waiting occur. If you hit Ctrl + C multiple times, you will escalate the interruption until the OS takes over and then this is handled by the signal handling of the OS's event loop, which sends a higher level interrupt which Julia handles the moment the safety locks says it's okay (these locks occur during memory allocations to ensure that memory is not corrupted)
+
+See it by running the following example
+
+
+```julia
+function f(j)
+    for i in 1:1000000000000rand()
+        j += i
+    end
+    j
+end
+```
+```julia
+f(1)
+```
+
+****Do the above with caution causes REPL to crash.**
