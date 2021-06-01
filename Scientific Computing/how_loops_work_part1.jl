@@ -1,4 +1,5 @@
 #* Discrete Dynamical Systems
+using BenchmarkTools
  function solve_system(f, u0, p, n)
     u = u0
     for _ in 1:n-1
@@ -13,11 +14,10 @@ typeof(f)
 
 #notice that for the fixed points we need f(u, p) = u i.e banach fixed poiint theorem
 #putting that we get u = {0, p+1} and now we must check for the derivative <1
-solve_system(f, 1.0, 0.25, 1000) #* evaluate for different n for egs 1,2,3 .... and finally 1000
+@btime solve_system(f, 1.0, 0.25, 1000) #* evaluate for different n for egs 1,2,3 .... and finally 1000
 solve_system(f, 1.1, 0.25, 1000) # again evaluates to 0
 solve_system(f, 1.25, 0.25, 4) #notice that p+1 is a fixed point 
 solve_system(f, 1.251, 0.25, 1000) # blows up to infinity
-
 
 
 
@@ -273,3 +273,10 @@ u = Vector{typeof(@SVector([1.0,0.0,0.0]))}(undef,1000)
 @btime solve_system_save!(u,lorenz,@SVector([1.0,0.0,0.0]),p,1000)
 
 
+function f(j)
+  for i in 1:1000000000000rand()
+      j += i
+  end
+  j
+end
+f(1)

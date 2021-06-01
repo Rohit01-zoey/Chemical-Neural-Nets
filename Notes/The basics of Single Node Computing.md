@@ -150,3 +150,133 @@ f(1)
 ```
 
 ****Do the above with caution causes REPL to crash.**
+
+
+---
+
+## Data-Parallel Problems
+So not every setup is amenable to parallelism. Dynamical systems are natorious for being quite difficult to parallelize because the dependency of the future time step on the previous time step is clear, meaning that one cannot easily "parallelize through time" (though it is possible, which we will study later).
+
+However, one common way that these systems are generally parallelized is in their inputs. The following questions allow for independent simulations:
+
+* What steady state does an input u0 go to for some list/region of initial conditions?
+* How does the solution vary when I use a different p?
+
+The problem has a few descriptions. For one, it's called an **embaressingly parallel problem** since the problem can remain largely intact to solve the parallelism problem. To solve this, we can use the exact same solve_system_save_iip!, and just change how we are calling it. Secondly, this is called a data parallel problem, since it parallelized by splitting up the input data (here, the possible u0 or ps) and acting on them independently.
+
+---
+
+## [Embarrassingly Parallel Algorithms Explained](https://www.freecodecamp.org/news/embarrassingly-parallel-algorithms-explained-with-examples/)
+![img2](https://cdn-media-2.freecodecamp.org/w1280/5f9c9f0c740569d1a4ca4093.jpg)
+
+>In parallel programming, an embarrassingly parallel algorithm is one that requires no communication or dependency between the processes. Unlike distributed computing problems that need communication between tasks—especially on intermediate results, embarrassingly parallel algorithms are easy to perform on server farms that lack the special infrastructure used in a true supercomputer cluster.
+
+Due to the nature of embarrassingly parallel algorithms, they are well suited to large, internet-based distributed platforms, and do not suffer from parallel slowdown. The opposite of embarrassingly parallel problems are inherently serial problems, which cannot be parallelized at all.
+
+The ideal case of embarrassingly parallel algorithms can be summarized as following:
+
+1. All the sub-problems or tasks are defined before the computations begin.
+2. All the sub-solutions are stored in independent memory locations (variables, array elements).
+
+Thus, the computation of the sub-solutions is completely independent.
+If the computations require some initial or final communication, then we call it nearly embarrassingly parallel.
+Many may wonder the etymology of the term “embarrassingly”. In this case, embarrassingly has nothing to do with embarrassment; in fact, it means an overabundance—here referring to parallelization problems which are “embarrassingly easy”.
+
+A common example of an embarrassingly parallel problem is 3d video rendering handled by a graphics processing unit, where each frame or pixel can be handled with no interdependency. Some other examples would be protein folding software that can run on any computer with each machine doing a small piece of the work, generation of all subsets, random numbers, and Monte Carlo simulations.
+
+Also can refer to this [site](https://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/EmbParallel.htm)
+# [Multi-Threading](https://docs.julialang.org/en/v1/manual/multi-threading/#Starting-Julia-with-multiple-threads)
+
+## Starting Julia with multiple threads
+
+By default, Julia starts up with a single thread of execution. This can be verified by using the
+command [`Threads.nthreads()`](@ref):
+
+```julia-repl
+julia> Threads.nthreads()
+1
+```
+
+The number of execution threads is controlled either by using the
+`-t`/`--threads` command line argument or by using the
+[`JULIA_NUM_THREADS`](@ref JULIA_NUM_THREADS) environment variable. When both are
+specified, then `-t`/`--threads` takes precedence.
+
+!!! compat "Julia 1.5"
+    The `-t`/`--threads` command line argument requires at least Julia 1.5.
+    In older versions you must use the environment variable instead.
+
+Lets start Julia with 4 threads:
+
+```bash
+$ julia --threads 4
+```
+
+Let's verify there are 4 threads at our disposal.
+
+```julia-repl
+julia> Threads.nthreads()
+4
+```
+
+But we are currently on the master thread. To check, we use the function [`Threads.threadid`](@ref)
+
+```julia-repl
+julia> Threads.threadid()
+1
+```
+
+---
+---
+
+## The `@threads` Macro
+
+Let's work a simple example using our native threads. Let us create an array of zeros:
+
+```jldoctest
+julia> a = zeros(10)
+10-element Vector{Float64}:
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+ 0.0
+```
+
+Let us operate on this array simultaneously using 4 threads. We'll have each thread write its
+thread ID into each location.
+
+Julia supports parallel loops using the [`Threads.@threads`](@ref) macro. This macro is affixed
+in front of a `for` loop to indicate to Julia that the loop is a multi-threaded region:
+
+```julia-repl
+julia> Threads.@threads for i = 1:10
+           a[i] = Threads.threadid()
+       end
+```
+
+The iteration space is split among the threads, after which each thread writes its thread ID
+to its assigned locations:
+
+```julia-repl
+julia> a
+10-element Array{Float64,1}:
+ 1.0
+ 1.0
+ 1.0
+ 2.0
+ 2.0
+ 2.0
+ 3.0
+ 3.0
+ 4.0
+ 4.0
+```
+
+Note that [`Threads.@threads`](@ref) does not have an optional reduction parameter like [`@distributed`](@ref).
+
