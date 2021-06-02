@@ -3,6 +3,7 @@
 * [Tutorials for SciML](https://tutorials.sciml.ai/)
 * [Flux](https://fluxml.ai/Flux.jl/stable/)
 * [CS18.337(Chris Rackackus)](https://www.youtube.com/channel/UCDtsHjkOEMHYPGgpKX8VOPg/videos)
+* [Cheat Sheet for Julia](https://juliadocs.github.io/Julia-Cheat-Sheet/)
 
 # DifferentialEquations.jl
 * [JuliaCon 2020 | Doing Scientific Machine Learning (SciML) With Julia](https://www.youtube.com/watch?v=QwVO0Xh2Hbg&t=7126s)
