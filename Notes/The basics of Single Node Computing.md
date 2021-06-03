@@ -588,3 +588,43 @@ julia> map(+, [1, 2, 3], [10, 20, 30])
  22
  33
 ```
+
+---
+---
+# [Learning the hard way](https://github.com/JuliaLang/IJulia.jl/issues/882)
+
+Running Threads.nthreads() on jupyter notebook gives 1 as the output and hence the effects of parallelism are not observed. 
+
+There's no way to start more Julia threads at runtime, unfortunately. Beyond that,
+```julia
+Threads.nthread() = 12
+```
+
+is not really idiomatic Julia. All it does is overwrite the function that calls into Julia's internals to determine the number of threads so that it just returns the number 12 - it doesn't actually increase the number of threads in any way. Typically, the kinds of APIs that do that kind of thing will look like Threads.set_nthreads!(12) (but, as I mentioned, that doesn't exist in Julia).
+
+If you want to do multithreading in Julia with Jupyter, you have to create a new kernelspec.
+```julia
+using IJulia
+IJulia.installkernel("Julia 12 Threads", env=Dict(
+    "JULIA_NUM_THREADS" => "12",
+))
+```
+Then you can create a new notebook using that kernel (or change the kernel of an existing notebook in the Kernel > Change Kernel menu) and run code as you expect.
+```julia
+Threads.@threads for i in 1:10
+    println(Threads.threadid())
+end
+```
+outputs (on my machine)
+```julia-repl
+5
+3
+6
+4
+8
+7
+2
+9
+1
+10
+```

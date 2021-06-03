@@ -12,8 +12,5 @@ rand(2, 2,2)
 
 length([1, 2, 3])
 
-Text above the line.
 
----
-
-And text below the line.
+Threads.nthreads()
