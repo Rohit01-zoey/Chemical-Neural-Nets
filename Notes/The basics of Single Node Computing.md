@@ -185,6 +185,27 @@ Many may wonder the etymology of the term “embarrassingly”. In this case, em
 A common example of an embarrassingly parallel problem is 3d video rendering handled by a graphics processing unit, where each frame or pixel can be handled with no interdependency. Some other examples would be protein folding software that can run on any computer with each machine doing a small piece of the work, generation of all subsets, random numbers, and Monte Carlo simulations.
 
 Also can refer to this [site](https://www.cise.ufl.edu/research/ParallelPatterns/PatternLanguage/AlgorithmStructure/EmbParallel.htm)
+
+---
+---
+# What's a [thread](https://en.wikipedia.org/wiki/Thread_(computing))?
+>In computer science, a *thread of execution* is the smallest sequence of programmed instructions that can be managed independently by a scheduler, which is typically a part of the operating system. 
+
+* The implementation of threads and processes differs between operating systems, but in most cases a thread is a component of a process. 
+* Multiple threads can exist within one process, executing **concurrently** and sharing resources such as memory, while different processes do not share these resources. 
+* In particular, the threads of a process share its executable code and the values of its dynamically allocated variables and non-thread-local global variables at any given time.
+
+![img3](https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Multithreaded_process.svg/330px-Multithreaded_process.svg.png)
+
+---
+## What are [green threads](https://en.wikipedia.org/wiki/Green_threads)?
+In computer programming, green threads or virtual threads are threads that are scheduled by a runtime library or virtual machine (VM) instead of natively by the underlying operating system (OS). Green threads emulate multithreaded environments without relying on any native OS abilities, and they are managed in user space instead of kernel space, enabling them to work in environments that do not have native thread support
+
+---
+---
+
+
+
 # [Multi-Threading](https://docs.julialang.org/en/v1/manual/multi-threading/#Starting-Julia-with-multiple-threads)
 
 ## Starting Julia with multiple threads
@@ -627,4 +648,67 @@ outputs (on my machine)
 9
 1
 10
+```
+
+---
+---
+
+# Hierarchical Task-Based Multithreading and Dynamic Scheduling
+
+The major change in Julia v1.3 is that Julia's Tasks, which are traditionally its green threads interface, are now the basis of its multithreading infrustructure. This means that all independent threads are parallelized, and a new interface for multithreading will exist that works by spawning threads.
+
+This implementation follows Go's goroutines and the classic multithreading interface of Cilk. There is a Julia-level scheduler that handles the multithreading to put different tasks on different vCPU threads. A benefit from this is hierarchical multithreading. Since Julia's tasks can spawn tasks, what can happen is a task can create tasks which create tasks which etc. In Julia (/Go/Cilk), this is then seen as a single pool of tasks which it can schedule, and thus it will still make sure only N are running at a time (as opposed to the naive implementation where the total number of running threads is equal then multiplied). This is essential for numerical performance because running multiple compute threads on a single CPU thread requires constant context switching between the threads, which will slow down the computations.
+
+To directly use the task-based interface, simply use Threads.@spawn to spawn new tasks.[From Chris Rackacus notes]
+
+### [Understanding the difference](https://stackoverflow.com/questions/61905127/what-is-the-difference-between-threads-spawn-and-threads-threads)
+
+`@threads` manages the pool of threads allotted to julia, and spawns up to one thread for each iteration of the `for` loop (possibly using the same threads more than once for more than one iteration, sequentially as each thread finishes its allotted iteration, if there are more iterations than threads), and also synchonizes the threads, not exiting the for block until all threads have completed. `@spawn` spawns just one task thread and returns to the main task immediately, and so the block can be exited as soon as all tasks are spawned, even before they are done working (so the zeros remain 0 in array arr).
+```julia
+function withthreads()
+    arr = zeros(Int, 10)
+    Threads.@threads for i in 1:10
+       sleep(3 * rand())
+       arr[i] = i
+    end
+    println("with @threads: $arr")
+end
+```
+
+```julia
+function withspawn()
+    arr = zeros(Int, 10)
+    for i in 1:10
+        Threads.@spawn begin
+            sleep(3 * rand())
+            arr[i] = i
+        end
+    end
+    println("with @spawn: $arr")
+end
+```
+```julia
+function withsync()
+    arr = zeros(Int, 10)
+    @sync begin  #notice the syntax for this macro
+        for i in 1:10
+           Threads.@spawn begin
+               sleep(3 * rand())
+               arr[i] = i
+           end
+        end
+    end
+    println("with @sync: $arr")
+end
+```
+```julia
+withthreads()
+withspawn()
+withsync()
+```
+We get the following output:
+```julia-repl
+with @threads: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+with @spawn: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+with @sync: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
