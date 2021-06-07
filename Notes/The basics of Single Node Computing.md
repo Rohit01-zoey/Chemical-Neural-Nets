@@ -712,3 +712,7 @@ with @threads: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 with @spawn: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 with @sync: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
+
+# [Understanding in depth](https://julialang.org/blog/2019/07/multithreading/)
+
+[@async vs @sync](https://stackoverflow.com/questions/37287020/how-and-when-to-use-async-and-sync-in-julia)
