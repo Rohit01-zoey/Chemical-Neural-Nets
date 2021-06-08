@@ -713,6 +713,19 @@ with @spawn: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 with @sync: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 ```
 
+---
+# Dynamic vs static scheduling
+
+`Threads.@threads` is built on the same multithreading infrustructure, so why is this so much slower? The reason is because `Threads.@threads` employs **static scheduling** while `Threads.@spawn` is using **dynamic scheduling**. Dynamic scheduling is the model of allowing the runtime to determine the ordering and scheduling of processes, i.e. what tasks will run run where and when. Julia's task-based multithreading system has a thread scheduler which will automatically do this for you in the background, but because this is done at runtime it will have overhead. Static scheduling is the model of pre-determining where and when tasks will run, instead of allowing this to be determined at runtime. `Threads.@threads` is "quasi-static" in the sense that it cuts the loop so that it spawns only as many tasks as there are threads, essentially assigning one thread for even chunks of the input data.
+
+Does this lack of runtime overhead mean that static scheduling is "better"? No, it simply has trade-offs.
+* Static scheduling assumes that the runtime of each block is the same. 
+* For this specific case where there are fixed number of loop iterations for the dynamical systems, we know that every 'compute_trajectory_mean5' costs exactly the same, and thus this will be more efficient. 
+* However, There are many cases where this might not be efficient. 
+
+
+---
+
 # [Understanding in depth](https://julialang.org/blog/2019/07/multithreading/)
 
-[@async vs @sync](https://stackoverflow.com/questions/37287020/how-and-when-to-use-async-and-sync-in-julia)
+# [@async vs @sync](https://stackoverflow.com/questions/37287020/how-and-when-to-use-async-and-sync-in-julia)

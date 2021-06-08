@@ -129,6 +129,55 @@ spawned(10)
     @async sleep(2)
 end
 
-@btime  for i in 1:10
-    @async sleep(2)
+
+
+# !!!!!!! @btime @async sleep(2) this crashes my laptopn
+
+#=
+Notice that too much of parallelism slows down computations so we must have task based parallelism.
+'Task Based parallelism' has a dynamic scheduler in the background ensures effecient parallelism
+=#
+@btime tmap2(p -> compute_trajectory_mean5(@SVector([1.0,0.0,0.0]),p),ps)
+
+# example of static vs dynamic scheduling
+function sleepmap_static()
+  out = Vector{Int}(undef,24)
+  Threads.@threads for i in 1:24
+    sleep(i/10)
+    out[i] = i
+  end
+  out
 end
+
+isleep(i) = (sleep(i/10);i)
+
+function sleepmap_spawn()
+  tasks = [Threads.@spawn(isleep(i)) for i in 1:24]
+  out = [fetch(t) for t in tasks]
+end
+
+@btime sleepmap_static()
+@btime sleepmap_spawn()
+
+#thus we notice that THreads.@threads takes ~9 seconds while Threads.@spawn takes only ~2
+#Why isit so?
+#=
+the dynamic scheduler assignes the task sequetially to each thread in Threads.@threads =>
+that in our egs since we have 6 threads and 24 tasks => 4 per thread i.e first 4 to first thread and so on
+on the contrary the Threads.@spawn alots these at runtime.
+
+See the detailed calculations below:-
+=#
+Threads.nthreads()
+
+sum(i/10 for i in 1:4)
+
+sum(i/10 for i in 21:24)
+#= notice that the above takes 9 seconds and this agrees with out @btime calculations for Threads.@threads
+
+9 seconds (which is precisely the result!). Thus by unevenly distributing the runtime, we run as fast as the slowest thread.
+ However, dynamic scheduling allows new tasks to immediately run when another is finished, meaning that the in that case the
+ shorter tasks tend to be piled together, causing a faster execution. Thus whether dynamic or static scheduling
+ is beneficial is dependent on the problem and the implementation of the static schedule.
+
+ =#
