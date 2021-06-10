@@ -85,13 +85,22 @@ acc = Atomic{Int64}(0)
 @threads for i in 1:10_000
     atomic_add!(acc, 1)
 end
-acc
+acc[]  #notice that the answer is 10000 which is correct
+
+# using atomics -->
+
+x = Threads.Atomic{Int}(4)
+atomic_add!(x, 2)
+x[]
 #=
 When an atomic add is being done, all other threads wishing to do the same computation are blocked.
 This of course can have a massive effect on performance since atomic computations are not parallel.
 
 Or we can use locks  --->
 =#
+a = Ref{Int64}(2)
+a[] +=1
+a[]
 
 const acc_lock = Ref{Int64}(0)
 const splock = SpinLock()
@@ -127,3 +136,73 @@ end
 @btime f2()
 @btime g()
 @btime h()
+
+#= notice that the atomics is faster than f1 and f2 so we shd utilize atomics whenever we can but the number of functions is limited
+so we are at a disadvantage.
+f1 is faster than f2 since we have additional safety in f2 => that in f1 we lock at the beginning and if we were to call  a function(a multithreaded one)
+ which were to lock the threads again then we would be in deadlock and the execution of the computer would just stop.
+
+ further notice that even thought h() is a serial code it is the fastest why????? becoz julia has analysed the code and since the code was
+ serial it knows that it just has to add a 1 10_000 times and so just adds 10000 rather than summing up 1's.
+ one can see this by seeing the code_llvm  --->look for this line "icmp eq i64 %value_phi, 10000"
+=#
+@code_llvm h()
+
+# It just knows to add 10000. So to get a proper timing let's make the size mutable:
+
+const len = Ref{Int}(10_000)
+#be careful what the above means we are creating a constant pointer of type Int  whose value may be anything
+# so the value is still mutable
+# len[] = 11_000 does NOT give a  "WARNING: redefinition of constant len. This may fail, cause incorrect answers, or produce other errors."
+function h2()
+  global acc_s
+  global len
+  for i in 1:len[]
+      acc_s[] += 1
+  end
+end
+@btime h2()
+
+#notice that the now julia cant specialise and add a 10000 directly since the len value is mutable .
+#but notice that we still ending up getting a faster code....how?
+#julia knows we are adding just one at each step and so just adds len[] direclty and circumvents the loop completely.
+#So we do the following :
+
+@code_llvm h2()
+
+non_const_len = 10000
+#note that global variables are not type inferred and so may give error while iterating
+function h3()
+  global acc_s
+  global non_const_len
+  len2::Int = non_const_len #changing to int so that the loop does not throw an error.
+  for i in 1:len2
+      acc_s[] += 1
+  end
+end
+
+@btime h3()
+#its still quite fast
+
+
+#=
+Note that what is shown here is a type-declaration. a::T = ... forces a to be of type T throughout the whole function.
+By giving the compiler this information, I am able to use the non-constant global in a type-stable manner.
+
+One last thing to note about multithreaded computations, and parallel computations, is that one cannot assume that the
+parallelized computation is computed in any given order. For example, the following will has a quasi-random ordering:
+=#
+
+const a2 = zeros(nthreads()*10)
+const acc_lock2 = Ref{Int64}(0)
+const splock2 = SpinLock()
+function f_order()
+    @threads for i in 1:length(a2)
+        lock(splock2)
+        acc_lock2[] += 1
+        a2[i] = acc_lock2[]
+        unlock(splock2)
+    end
+end
+f_order()
+a2
