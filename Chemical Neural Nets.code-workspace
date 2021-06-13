@@ -5,6 +5,7 @@
 		}
 	],
 	"settings": {
-		"python.pythonPath": "C:\\Users\\Rohit\\Anaconda3\\python.exe"
+		"python.pythonPath": "C:\\Users\\Rohit\\Anaconda3\\python.exe",
+		"julia.environmentPath": "C:\\Users\\Rohit\\.julia\\environments\\v1.5"
 	}
 }
