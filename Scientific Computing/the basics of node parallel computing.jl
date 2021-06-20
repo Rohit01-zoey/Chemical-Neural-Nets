@@ -1,3 +1,70 @@
+
+@time for i in 1:10
+  sleep(2)
+end
+@time for i in 1:10
+     @async sleep(2)
+end
+#=
+
+Notice that by adding @async we have reduced the time.
+We have added threads which do the calculations parallely and hence
+time required is very less.
+
+@async :-
+Wrap an expression in a Task and add it to the local machine's scheduler queue.
+
+Values can be interpolated into @async via $, which copies the value directly into the constructed underlying closure. This allows you to insert the value of a variable, isolating the aysnchronous code from changes to the variable's value in the current task.
+
+!!! compat "Julia 1.4" Interpolating values via $ is available as of Julia 1.4.
+=#
+#=
+
+@async and @sync
+Refer https://riptutorial.com/julia-lang/example/15919/-async-and--sync
+
+According to the documentation under ?@async, "@async wraps an
+expression in a Task." What this means is that for whatever falls
+within its scope, Julia will start this task running but then
+proceed to whatever comes next in the script without waiting
+for the task to complete. Thus, for instance, without the macro
+you will get:
+=#
+@time sleep(2)
+#but with macro we get :
+@time @async sleep(2)
+
+#=
+Julia thus allows the script to proceed (and the @time macro to fully execute)
+without waiting for the task (in this case, sleeping for two seconds) to complete.
+
+The @sync macro, by contrast, will "Wait until all dynamically-enclosed uses of
+@async, @spawn, @spawnat and @parallel are complete." (according to the documentation under ?@sync).
+Thus, we see:
+=#
+@time @sync @async sleep(2)
+
+#=
+
+In this simple example then,
+there is no point to including a single instance of @async and @sync
+together. But, where @sync can be useful is where you have
+@async applied to multiple operations that you wish
+ to allow to all start at once without waiting for each to complete.
+
+For example:
+=#
+@time @sync @time for i in 1:10
+    @async sleep(2)
+    end
+#=
+
+So 0.000058 seconds is the time required to generate the threads and
+ so all operations now are run parallely and hence take ~2 seconds.
+
+Notice that the above is actually concurrency since there is no
+computation involved.
+=#
 using StaticArrays, BenchmarkTools
 function lorenz(u,p)
   α,σ,ρ,β = p

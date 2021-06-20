@@ -150,8 +150,8 @@ f1 is faster than f2 since we have additional safety in f2 => that in f1 we lock
 
 # It just knows to add 10000. So to get a proper timing let's make the size mutable:
 
-const len = Ref{Int}(10_000)
 #be careful what the above means we are creating a constant pointer of type Int  whose value may be anything
+const len = Ref{Int}(10_000)
 # so the value is still mutable
 # len[] = 11_000 does NOT give a  "WARNING: redefinition of constant len. This may fail, cause incorrect answers, or produce other errors."
 function h2()
@@ -171,7 +171,7 @@ end
 @code_llvm h2()
 
 non_const_len = 10000
-#note that global variables are not type inferred and so may give error while iterating
+#note that global variables are not type inferred (=> type instability) and so may give error while iterating
 function h3()
   global acc_s
   global non_const_len
