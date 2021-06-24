@@ -184,3 +184,54 @@ if you want other threads to be able to touch a value, then you can simply place
 it on the heap and then it'll be available. We saw this last time by how overlapping
 computations can re-use the same heap-based caches, meaning that care needs to
 be taken with how one writes into a dynamically-allocated array.
+
+---
+## The Dining Philosophers Problem[Taken from notes]
+A classic tale in parallel computing is the dining philosophers problem. In this case, there are N philosophers at a table who all want to eat at the same time, following all of the same rules. Each philosopher must alternatively think and then eat. They need both their left and right fork to start eating, but cannot start eating until they have both forks. The problem is how to setup a concurrent algorithm that will not cause any philosophers to starve.
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/An_illustration_of_the_dining_philosophers_problem.png/220px-An_illustration_of_the_dining_philosophers_problem.png)
+
+The difficulty is a situation known as **deadlock**. For example, if each philosopher was told to grab the right fork when it's avaialble, and then the left fork, and put down the fork after eating, then they will all grab the right fork and none will ever eat because they will all be waiting on the left fork. This is analygous to two blocked computations which are waiting on the other to finish. Thus, when using blocking structures, one needs to be careful about deadlock!
+
+[The analogy being that the philosophers are the computers and the forks are the tasks to be completed at hand.]
+
+---
+
+## Two Programming Models: Loop-Level Parallelism and Task-Based Parallelism
+As described in the previous lecture, one can also use `Threads.@spawn` to do multithreading in Julia v1.3+. The same factors all apply: how to do locks and Mutex etc. This is a case of a parallelism construct having two alternative programming models. 
+* `Threads.@spawn` represents task-based parallelism, while 
+* `Threads.@threads` represents Loop-Level Parallelism or a parallel iterator model
+* **Loop-based parallelization** models are very high level and, assuming every iteration is independent, almost requires no code change. 
+* **Task-based parallelism** is a more expressive parallelism model, but usually requires modifying the code to be explicitly written as a set of parallelizable tasks.
+> Note that in the case of Julia, Threads.@threads is implemented using Threads.@spawn's model.
+
+---
+## [Task based parallelism](https://en.wikipedia.org/wiki/Task_parallelism)
+* Task parallelism (also known as function parallelism and control parallelism) is a form of parallelization of computer code across multiple processors in parallel computing environments. 
+* Task parallelism focuses on distributing tasks—concurrently performed by processes or threads—across different processors. 
+* In contrast to data parallelism which involves running the same task on different components of data, task parallelism is distinguished by running many different tasks at the same time on the same data.
+*  A common type of task parallelism is **pipelining** which consists of moving a single set of data through a series of separate tasks where each task can execute independently of the others.
+
+### Description of task based parallelism
+* In a multiprocessor system, task parallelism is achieved when each processor executes a different thread (or process) on the same or different data. The threads may execute the same or different code. In the general case, different execution threads communicate with one another as they work, but this is not a requirement. Communication usually takes place by passing data from one thread to the next as part of a workflow.
+* As a simple example, if a system is running code on a 2-processor system (CPUs "a" & "b") in a parallel environment and we wish to do tasks "A" and "B", it is possible to tell CPU "a" to do task "A" and CPU "b" to do task "B" simultaneously, thereby reducing the run time of the execution. The tasks can be assigned using conditional statements as described below.
+* Task parallelism emphasizes the distributed (parallelized) nature of the processing (i.e. threads), as opposed to the data (data parallelism). Most real programs fall somewhere on a continuum between task parallelism and data parallelism.
+* *Thread-level parallelism* (TLP) is the parallelism inherent in an application that runs multiple threads at once. This type of parallelism is found largely in applications written for commercial servers such as databases. By running many threads at once, these applications are able to tolerate the high amounts of I/O and memory system latency their workloads can incur - while one thread is delayed waiting for a memory or disk access, other threads can do useful work.
+* The exploitation of thread-level parallelism has also begun to make inroads into the desktop market with the advent of multi-core microprocessors. This has occurred because, for various reasons, it has become increasingly impractical to increase either the clock speed or instructions per clock of a single core. If this trend continues, new applications will have to be designed to utilize multiple threads in order to benefit from the increase in potential computing power. This contrasts with previous microprocessor innovations in which existing code was automatically sped up by running it on a newer/faster computer.
+  
+### Example 
+Look at the following psuedo-code :-
+```
+program:
+...
+if CPU = "a" then
+    do task "A"
+else if CPU="b" then
+    do task "B"
+end if
+...
+end program
+```
+---
+* for loop based parallelism refer to the above explanation.
+---

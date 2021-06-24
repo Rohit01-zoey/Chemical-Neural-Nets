@@ -14,7 +14,8 @@ time required is very less.
 @async :-
 Wrap an expression in a Task and add it to the local machine's scheduler queue.
 
-Values can be interpolated into @async via $, which copies the value directly into the constructed underlying closure. This allows you to insert the value of a variable, isolating the aysnchronous code from changes to the variable's value in the current task.
+Values can be interpolated into @async via $, which copies the value directly into the constructed underlying closure.
+This allows you to insert the value of a variable, isolating the aysnchronous code from changes to the variable's value in the current task.
 
 !!! compat "Julia 1.4" Interpolating values via $ is available as of Julia 1.4.
 =#
@@ -42,7 +43,7 @@ The @sync macro, by contrast, will "Wait until all dynamically-enclosed uses of
 @async, @spawn, @spawnat and @parallel are complete." (according to the documentation under ?@sync).
 Thus, we see:
 =#
-@time @sync @async sleep(2)
+@time @async @sync sleep(2)
 
 #=
 
@@ -54,10 +55,13 @@ together. But, where @sync can be useful is where you have
 
 For example:
 =#
-@time @sync @time for i in 1:10
+@time @sync  for i in 1:10
     @async sleep(2)
     end
+
+
 #=
+
 
 So 0.000058 seconds is the time required to generate the threads and
  so all operations now are run parallely and hence take ~2 seconds.
@@ -95,6 +99,32 @@ end
 
 p = (0.02,10.0,28.0,8/3)
 u = Vector{typeof(@SVector([1.0,0.0,0.0]))}(undef,1000)
+@btime solve_system_save!(u,lorenz,@SVector([1.0,0.0,0.0]),p,1000)
+
+function lorenz!(du,u,p)
+  α,σ,ρ,β = p
+  @inbounds begin
+    du[1] = u[1] + α*(σ*(u[2]-u[1]))
+    du[2] = u[2] + α*(u[1]*(ρ-u[3]) - u[2])
+    du[3] = u[3] + α*(u[1]*u[2] - β*u[3])
+  end
+end
+function solve_system_save_iip!(u,f,u0,p,n)
+  @inbounds u[1] = u0
+  @inbounds for i in 1:length(u)-1
+    f(u[i+1],u[i],p)
+  end
+  u
+end
+p = (0.02,10.0,28.0,8/3)
+u = [Vector{Float64}(undef,3) for i in 1:1000]
+@btime solve_system_save_iip!(u,lorenz!,[1.0,0.0,0.0],p,1000)
+
+
+
+
+
+
 
 const _u_cache = Vector{typeof(@SVector([1.0,0.0,0.0]))}(undef,1000)
 const _u_cache_threads = [Vector{typeof(@SVector([1.0,0.0,0.0]))}(undef,1000) for i in 1:Threads.nthreads()]
