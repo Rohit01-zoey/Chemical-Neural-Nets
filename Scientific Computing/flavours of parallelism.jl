@@ -235,7 +235,7 @@ using CUDA
 
 N = 2^20
 x_d = CUDA.fill(1.0f0, N)  # a vector stored on the GPU filled with 1.0 (Float32)
-y_d = CUDA.fill(2.0f0, N)  # a vector stored on the GPU filled with 2.0
+y_d = CUDA.fill(2.0f0, N)  # a vecto stored on the GPU filled with 2.0
 
 function gpu_add2!(y, x)
     index = threadIdx().x    # this example only requires linear indexing, so just use `x`
