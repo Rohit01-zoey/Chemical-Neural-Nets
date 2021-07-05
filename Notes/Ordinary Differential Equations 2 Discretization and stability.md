@@ -143,19 +143,25 @@ where $f_n = f(u_n,p,t)$.
 
 >Notice that this is different from taking 2 time steps( in which case we would have had $\frac{\Delta t}{2}$). That is we would have had the following equations: $$u_{n+1/2} = u_{n} + \frac{\Delta t}{2} f(u_{n}, p, t)$$ and similarly for $$u_{n+1} = u_{n+1/2} + \frac{\Delta t}{2}  f(u_{n+1/2}, p, t)$$
 
+
+> Definition:  $n^{th}$ -degree Taylor Polynomial for a function of two variables
+> 
+> For a function of two variables  $f(x,y)$  whose partials all exist to the  $n^{th}$  partials at the point  $(a,b)$ , the  $n^{th}$ -degree Taylor polynomial of  $f$  for  $(x,y)$  near the point  $(a,b)$  is:
+> $$P_n(x,y) = \sum_{i=0}^n \sum_{j=0}^{n - i} \frac{\frac{d^{(i+j)}f}{∂x^i∂y^{j}}(a,b) }{i!j!}(x-a)^i(y-b)^j $$ 
+
  If we do the two-dimensional Taylor expansion we get:
 
 $$
 u_{n+1} = u_n + \Delta t f_n + \frac{\Delta t^2}{2}(f_t + f_u f)(u_n,p,t)+ 
 \frac{\Delta t^3}{6} (f_{tt} + 2f_{tu}f + f_{uu}f^2)(u_n,p,t)
-$$
+$$ (????)
 
 which when we compare against the true Taylor series:
 
 $$
 u(t+\Delta t) = u_n + \Delta t f(u_n,p,t) + \frac{\Delta t^2}{2}(f_t + f_u f)(u_n,p,t)
 + \frac{\Delta t^3}{6}(f_{tt} + 2f_{tu} + f_{uu}f^2 + f_t f_u + f_u^2 f)(u_n,p,t)
-$$
+$$ (?????)
 
 and thus we see that
 
@@ -168,15 +174,9 @@ $$\frac{u(t + \Delta t) - u(t)}{\Delta t} = f(u,p,t) + \mathcal{O}(\Delta t ^2)$
 Since we get $\mathcal{O}(\Delta t ^2)$ as the error much better than $\mathcal{O}(\Delta t)$.
 
 >Notice that in the above methods we assume that the derivative is constant for t = t to to = t + $\Delta t$
-
-> Definition:  nth -degree Taylor Polynomial for a function of two variables
-> 
-> For a function of two variables  f(x,y)  whose partials all exist to the  nth  partials at the point  (a,b) , the  nth -degree Taylor polynomial of  f  for  (x,y)  near the point  (a,b)  is:
-> $$P_n(x,y) = \sum_{i=0}^n \sum_{j=0}^{n - i} \frac{\frac{d^{(i+j)}f}{∂x^i∂y^{j}}(a,b) }{i!j!}(x-a)^i(y-b)^j $$ 
-
 ---
 
-### Runge-Kutta Methods
+## Runge-Kutta Methods
 
 More generally, Runge-Kutta methods are of the form:
 
@@ -210,14 +210,16 @@ k_4 = f(u_n + \Delta t k_3,p,t + \Delta t)\\
 u_{n+1} = u_n + \frac{\Delta t}{6}(k_1 + 2 k_2 + 2 k_3 + k_4)\\
 $$
 
+> Notice that in the above calculaltions we are finding the approximation of u' at the midpoint by using Euler's method again and again.
+
 While it's widely known and simple to remember, it's not necessarily good. The
 way to judge a Runge-Kutta method is by looking at the size of the coefficient
 of the next term in the Taylor series: if it's large then the true error can
 be larger, even if it matches another one asymtopically.
 
-## What Makes a Good Method?
+# What Makes a Good Method?
 
-### Leading Truncation Coeffcients
+## Leading Truncation Coeffcients
 
 For given orders of explicit Runge-Kutta methods, lower bounds for the number of
 `f` evaluations (stages) required to receive a given order are known:
