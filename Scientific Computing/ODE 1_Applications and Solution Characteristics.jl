@@ -1,5 +1,6 @@
 using DifferentialEquations
 
+
 # definin the ODE as a function
 # notice that we usually write for du and pre allocate that memory.
 function lorenz(du,u,p,t)
