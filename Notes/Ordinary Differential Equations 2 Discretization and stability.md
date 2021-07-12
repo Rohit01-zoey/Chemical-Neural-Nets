@@ -1,4 +1,20 @@
-## 0.1. Linear Ordinary Differential Equations
+- [1. Numerically Solving Ordinary Differential Equations](#1-numerically-solving-ordinary-differential-equations)
+  - [1.1. Euler's Method](#11-eulers-method)
+  - [1.2. Higher Order Methods](#12-higher-order-methods)
+  - [1.3. Runge-Kutta Methods](#13-runge-kutta-methods)
+- [2. Runge Kutta method](#2-runge-kutta-method)
+- [3. What Makes a Good Method?](#3-what-makes-a-good-method)
+  - [3.1. Leading Truncation Coeffcients](#31-leading-truncation-coeffcients)
+  - [3.2. Looking at the Effects of RK Method Choices and Code Optimizations](#32-looking-at-the-effects-of-rk-method-choices-and-code-optimizations)
+  - [3.3. Stability of a Method](#33-stability-of-a-method)
+    - [3.3.1. Interpretation of the Linear Stability Condition](#331-interpretation-of-the-linear-stability-condition)
+  - [3.4. Implicit Methods](#34-implicit-methods)
+  - [3.5. Stiffness and Timescale Separation](#35-stiffness-and-timescale-separation)
+  - [3.6. Exploiting Continuity](#36-exploiting-continuity)
+    - [3.6.1. Geometric Properties: No Jumping and the Poincaré–Bendixson theorem](#361-geometric-properties-no-jumping-and-the-poincarébendixson-theorem)
+- [4. To do list](#4-to-do-list)
+---
+## 0.2. Linear Ordinary Differential Equations
 
 The simplest ordinary differential equation is the scalar linear ODE, which
 is given in the form
@@ -40,7 +56,7 @@ discrete dynamical system, we have that:
 - If all of the eigenvalues negative, then $u(t) \rightarrow 0$ as $t \rightarrow \infty$
 - If any eigenvalue is positive, then $u(t) \rightarrow \infty$ as $t \rightarrow \infty$
 
-## 0.2. Nonlinear Ordinary Differential Equations
+## 0.3. Nonlinear Ordinary Differential Equations
 
 As with discerte dynamical systems, the geometric properties extend locally to
 the linearization of the continuous dynamical system as defined by:
@@ -49,7 +65,7 @@ $$u' = \frac{df}{du} u$$
 
 where $\frac{df}{du}$ is the Jacobian of the system. This is a consequence of the Hartman-Grubman Theorem.
 
-## 0.3. [Hartman Grubman Theorem](https://en.wikipedia.org/wiki/Hartman%E2%80%93Grobman_theorem)
+## 0.4. [Hartman Grubman Theorem](https://en.wikipedia.org/wiki/Hartman%E2%80%93Grobman_theorem)
 > The theorem states that the behaviour of a dynamical system in a domain near a hyperbolic equilibrium point is qualitatively the same as the behaviour of its linearisation near this equilibrium point, where hyperbolicity means that no eigenvalue of the linearisation has real part equal to zero. 
 
 Therefore, when dealing with such dynamical systems one can use the simpler linearisation of the system to analyse its behaviour around equilibria.
@@ -112,7 +128,7 @@ $$\frac{u(t + \Delta t) - u(t)}{\Delta t} = f(u,p,t) + \mathcal{O}(\Delta t)$$
 Since the error is a first order eqn in $\Delta t$, we call Eulers method as first order approximation.
 
 ---
-## Higher Order Methods
+## 1.2. Higher Order Methods
 
 We can use this analysis to extend our methods to higher order approximation
 by simply matching the Taylor series to a higher order. Intuitively, when we
@@ -141,7 +157,12 @@ where $f_n = f(u_n,p,t)$.
 
 >In simpler words we approximate the value of the derivative at the time point $t + \frac{\Delta t}{2}$ using Eulers method and then assume that this is the true value of the derivative in the nbd $(t, t + \Delta t)$ and use this value in approximating $u_{n+1}$
 
->Notice that this is different from taking 2 time steps( in which case we would have had $\frac{\Delta t}{2}$). That is we would have had the following equations: $$u_{n+1/2} = u_{n} + \frac{\Delta t}{2} f(u_{n}, p, t)$$ and similarly for $$u_{n+1} = u_{n+1/2} + \frac{\Delta t}{2}  f(u_{n+1/2}, p, t)$$
+>Notice that this is different from taking 2 time steps( in which case we would have had $\frac{\Delta t}{2}$ ). That is we would have had the following equations: 
+> $$
+  u_{n+1/2} = u_{n} + \frac{\Delta t}{2} f(u_{n}, p, t)
+> $$ 
+>and similarly for 
+> $$u_{n+1} = u_{n+1/2} + \frac{\Delta t}{2}  f(u_{n+1/2}, p, t)$$
 
 
 > Definition:  $n^{th}$ -degree Taylor Polynomial for a function of two variables
@@ -154,14 +175,14 @@ where $f_n = f(u_n,p,t)$.
 $$
 u_{n+1} = u_n + \Delta t f_n + \frac{\Delta t^2}{2}(f_t + f_u f)(u_n,p,t)+ 
 \frac{\Delta t^3}{6} (f_{tt} + 2f_{tu}f + f_{uu}f^2)(u_n,p,t)
-$$ (????)
+$$ 
 
 which when we compare against the true Taylor series:
 
 $$
 u(t+\Delta t) = u_n + \Delta t f(u_n,p,t) + \frac{\Delta t^2}{2}(f_t + f_u f)(u_n,p,t)
 + \frac{\Delta t^3}{6}(f_{tt} + 2f_{tu} + f_{uu}f^2 + f_t f_u + f_u^2 f)(u_n,p,t)
-$$ (?????)
+$$ 
 
 and thus we see that
 
@@ -174,9 +195,11 @@ $$\frac{u(t + \Delta t) - u(t)}{\Delta t} = f(u,p,t) + \mathcal{O}(\Delta t ^2)$
 Since we get $\mathcal{O}(\Delta t ^2)$ as the error much better than $\mathcal{O}(\Delta t)$.
 
 >Notice that in the above methods we assume that the derivative is constant for t = t to to = t + $\Delta t$
+
 ---
 
-## Runge-Kutta Methods
+
+## 1.3. Runge-Kutta Methods
 
 More generally, Runge-Kutta methods are of the form:
 
@@ -217,9 +240,35 @@ way to judge a Runge-Kutta method is by looking at the size of the coefficient
 of the next term in the Taylor series: if it's large then the true error can
 be larger, even if it matches another one asymtopically.
 
-# What Makes a Good Method?
+# 2. [Runge Kutta method](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods)
+The most widely known member of the Runge–Kutta family is generally referred to as "RK4", the "classic Runge–Kutta method" or simply as "the Runge–Kutta method".
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/7/7e/Runge-Kutta_slopes.svg/450px-Runge-Kutta_slopes.svg.png)
 
-## Leading Truncation Coeffcients
+Let an [initial value problem](https://en.wikipedia.org/wiki/Initial_value_problem) be specified as follows: 
+![](https://wikimedia.org/api/rest_v1/media/math/render/svg/4d8e66a5b03a7f9053d517721604f6bd39935f79)
+Here $y$ is an unknown function (scalar or vector) of time $t$ , which we would like to approximate; we are told that $\frac {dy}{dt}$ , the rate at which $y$ changes, is a function of $t$ and of $y$ itself. At the initial time $t_{0}$ the corresponding $y$ value is $y_{0}$ . The function $f$ and the initial conditions $t_{0}$ , $y_{0}$ are given.
+
+Now pick a step-size h > 0 and define
+$$
+y_{n+1} = y_n + \frac{\Delta t}{6}(k_1 + 2 k_2 + 2 k_3 + k_4)\\
+t_{n+1} = t_{n} + h\\
+$$
+for n = 0,1,2 $\ldots$ using:
+
+$$
+k_1 = f(y_n,p,t)\\ 
+k_2 = f(y_n + \frac{\Delta h}{2} k_1,p,t_n + \frac{\Delta h}{2})\\
+k_3 = f(y_n + \frac{\Delta h}{2} k_2,p,t_n + \frac{\Delta h}{2})\\
+k_4 = f(y_n + \Delta h k_3,p,t_n + \Delta h)\\
+$$
+
+Refer to the [Wikipedia](https://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods) (it was difficult to copy all the content.) :warning:
+
+
+
+# 3. What Makes a Good Method?
+
+## 3.1. Leading Truncation Coeffcients
 
 For given orders of explicit Runge-Kutta methods, lower bounds for the number of
 `f` evaluations (stages) required to receive a given order are known:
@@ -241,7 +290,9 @@ Notice that this method takes 7 calls to `f` for 5th order. The key to this meth
 is that it has optimized leading truncation error coefficients, under some extra
 assumptions which allow for the analysis to be simplified.
 
-### Looking at the Effects of RK Method Choices and Code Optimizations
+## 3.2. Looking at the Effects of RK Method Choices and Code Optimizations
+
+>The below is called a **Work precision diagram**. For numerical methods like the ones dealing with ODEs, one always needs to refer to a Work Precision Diagram because one has to understand how the error of the solution is changing with respect to time since we never have an exact solution.
 
 Pulling from the [SciML Benchmarks](https://github.com/SciML/SciMLBenchmarks.jl),
 we can see the general effect of these different properties on a given set of
@@ -249,11 +300,17 @@ Runge-Kutta methods:
 
 ![](https://user-images.githubusercontent.com/1814174/95118000-7c8a1b00-0717-11eb-8080-2179da500cd2.PNG)
 
-Here, the order of the method is given in the name. We can see one immediate factor
-is that, as the requested error in the calculation decreases, the higher order
-methods become more efficient. This is because to decrease error, you decrease
+* There are some clear properties we can pull out from the above diagram. For example, DP5 method. Notice that we are okay with larger amounts of error then the graph is very steep as compared to when the  error is very less.
+
+* Here, the order of the method is given in the name.
+*  We can see one immediate factor is that, as the requested error in the calculation decreases, the higher order methods become more efficient. 
+*  This is because to decrease error, you decrease
 $\Delta t$, and thus the exponent difference with respect to $\Delta t$ has more
-of a chance to pay off for the extra calls to `f`. Additionally, we can see that
+of a chance to pay off for the extra calls to `f`. 
+
+> Therefore higher order methods do much better when we want lesser error
+
+Additionally, we can see that
 order is not the only determining factor for efficiency: the Vern8 method seems
 to have a clear approximate 2.5x performance advantage over the whole span of the
 benchmark compared to the DP8 method, even though both are 8th order methods.
@@ -272,6 +329,10 @@ common interface for the standard `dopri` method from Fortran, and ODE.jl, the
 original ODE solvers in Julia, have a performance disadvantage compared to the
 DifferentialEquations.jl methods due in part to some of the coding performance
 pieces that we discussed in the first few lectures.
+
+> Notice that in the ODEproblem julia code(i.e ODEsolver in julia), we pass the function that we want to calculate. Because it is JIT compiled, the julia code is able to JIT compile the function call to the ODE solver library itself and so can decrease the runtime required to solve the problem at hand.
+> Now, notice the above would not be possible if the ODE solver was compiled before-hand. If it were it just do a call to the function pointer we have passed and then would not be able to compile per each ODE .
+
 
 Specifically, a large part of this can be attributed to inlining of the higher order
 functions, i.e. ODEs are defined by a user function and then have to be called
@@ -313,7 +374,7 @@ different RK methods (note that R uses "call by copy" which even further increas
 the memory usages and makes standard usage of the language incompatible with
 mutating function calls!).
 
-### Stability of a Method
+## 3.3. Stability of a Method
 
 Simply having an order on the truncation error does not imply convergence of the
 method. The disconnect is that the errors at a given time point may not dissipate.
@@ -362,7 +423,7 @@ that we discussed are as follows:
 
 ![](https://user-images.githubusercontent.com/1814174/95117286-56b04680-0716-11eb-9c6a-07fc4d190a09.PNG)
 
-### Interpretation of the Linear Stability Condition
+### 3.3.1. Interpretation of the Linear Stability Condition
 
 To interpret the linear stability condition, recall that the linearization of
 a system interprets the dynamics as locally being due to the Jacobian of the
@@ -382,7 +443,7 @@ are different throughout the solution of a nonlinear equation and are generally
 understood locally (though different more comprehensive stability conditions
 exist!).
 
-### Implicit Methods
+## 3.4. Implicit Methods
 
 If instead of the Euler method we defined $f$ to be evaluated at the future
 point, we would receive a method like:
@@ -408,7 +469,7 @@ is still able to be use reasonably large stepsizes and can thus be efficient.
 
 ![](https://user-images.githubusercontent.com/1814174/95117191-28326b80-0716-11eb-8e17-889308bdff53.PNG)
 
-### Stiffness and Timescale Separation
+## 3.5. Stiffness and Timescale Separation
 
 From this we see that there is a maximal stepsize whenever the eigenvalues
 of the Jacobian are sufficiently large. It turns out that's not an issue if
@@ -428,14 +489,14 @@ time step.
 
 ![](https://user-images.githubusercontent.com/1814174/95132552-f6c59a00-072d-11eb-881e-24364b7b728f.PNG)
 
-## Exploiting Continuity
+## 3.6. Exploiting Continuity
 
 So far, we have looked at ordinary differential equations as a $\Delta t \rightarrow 0$
 formulation of a discrete dynamical system. However, continuous dynamics and
 discrete dynamics have very different characteristics which can be utilized in
 order to arrive at simpler models and faster computations.
 
-### Geometric Properties: No Jumping and the Poincaré–Bendixson theorem
+### 3.6.1. Geometric Properties: No Jumping and the Poincaré–Bendixson theorem
 
 In terms of geometric properties, continuity places a large constraint on the
 possible dynamics. This is because of the physical constraint on "jumping", i.e.
@@ -454,3 +515,8 @@ any arbitrary (but nice) two dimensional continuous system, you can only have
 - Periodic orbits
 
 A simple proof by picture shows this.
+
+
+# 4. To do list
+1. Higher order methods
+2. Range Kutta method 
