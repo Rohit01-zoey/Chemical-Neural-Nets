@@ -406,6 +406,23 @@ which is stable when $z$ is in the shifted unit circle. This means that, as a
 necessary condition, the step size $\Delta t$ needs to be small enough that
 $z$ satisfies this condition, placing a stepsize limit on the method.
 
+> In other words,
+> $$u' = \alpha u$$
+> is the linear Ode we have. Notice the following:
+> * If $\alpha < 0$, then $u(t) \rightarrow 0$.
+> * If $\alpha < 0$, then we want the Euler's approximation to have $u_n \rightarrow 0$.
+> * If $\alpha < 0$, then $z<0$. (where $z = \Delta t \alpha$)
+> $$u_{n+1} = u_{n} + zu_{n} = (1+z)u_{n}$$
+> * Notice that the above Euler's method will have $u_{n} \rightarrow 0$ if $\Vert 1+z \Vert < 1$ (why is this the case?  Recall we had shown this is in the case of Discrete dynamical system)
+> * Therefore, only when $\Vert 1 + \alpha \Delta t \Vert < 1$ that the Euler discretization has the same general asymtopic behaviour as the true continous syystem.
+> * Thus, we can select a $\Delta t$ which satisfies the above property. 
+
+> Now we usually take $\alpha$ to be complex to since we want to generalise as much as possible .
+> So for any ODE, we linearize the given dynamical system around the given point, thus we get a Jacobian matrix. We diagonalize this matrix to find the eigen values and the largest eigen value is the one we look at, since this tells if we have anything exploding to infinity or not.
+> So now let $\alpha$ be the largest eigen  value of our system at the current point.
+> Thus the $\Delta t$ that we can choose for the system is $\frac{1}{\alpha}$ or $\frac{1}{1+\alpha}$
+> Even we have a real jacobian matrix we still can get complex eigen values.
+
 ![](https://user-images.githubusercontent.com/1814174/95117231-3c766880-0716-11eb-9069-039253bcebda.PNG)
 
 If $\Delta t$ is ever too large, it will cause the equation to overshoot zero,
@@ -445,8 +462,8 @@ exist!).
 
 ## 3.4. Implicit Methods
 
-If instead of the Euler method we defined $f$ to be evaluated at the future
-point, we would receive a method like:
+If instead of the Euler method we defined **$f$ to be evaluated at the future
+point**, we would receive a method like:
 
 $$u_{n+1} = u_n + \Delta t f(u_{n+1},p,t+\Delta t)$$
 
@@ -468,6 +485,8 @@ This means that for equations with very ill-conditioned Jacobians, this method
 is still able to be use reasonably large stepsizes and can thus be efficient.
 
 ![](https://user-images.githubusercontent.com/1814174/95117191-28326b80-0716-11eb-8e17-889308bdff53.PNG)
+
+> So this method is always correct for any $\Delta t$
 
 ## 3.5. Stiffness and Timescale Separation
 
@@ -520,3 +539,4 @@ A simple proof by picture shows this.
 # 4. To do list
 1. Higher order methods
 2. Range Kutta method 
+3. [Stiffness of an ODE](https://blogs.mathworks.com/cleve/2014/06/09/ordinary-differential-equations-stiffness/)
