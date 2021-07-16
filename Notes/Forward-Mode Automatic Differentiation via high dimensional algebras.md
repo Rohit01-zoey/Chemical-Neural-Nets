@@ -147,3 +147,291 @@ things are good with finite differencing.
 
 The centered difference formula is a little bit better, but this picture
 suggests something much better...
+
+# Differencing in a Different Dimension: Complex Step Differentiation
+
+The problem with finite differencing is that we are mixing our really small
+number with the really large number, and so when we do the subtract we lose
+accuracy. Instead, we want to keep the small perturbation completely separate.
+
+To see how to do this, assume that $x \in \mathbb{R}$ and assume that $f$ is
+complex analytic. You want to calculate a real derivative, but **your function
+just happens to also be complex analytic** when extended to the complex plane.
+Thus it has a Taylor series, and let's see what happens when we expand out this
+Taylor series purely in the complex direction:
+(that is :- what we want to do is calculate $f \prime (x)$, where $x \in \mathbb{R}$ and $f : \mathbb{R} \rightarrow \mathbb{R}$.But, $f(x)$ is analytic(that is that its derivative exists in *some nice sense*) implying that's its Taylor series exists.)
+
+$$f(x+ih) = f(x) + f'(x)ih + \mathcal{O}(h^2)$$
+
+which we can re-arrange as:
+
+$$if'(x) = \frac{f(x+ih) - f(x)}{h} + \mathcal{O}(h)$$
+
+Since $x$ is real and $f$ is real-valued on the reals, $if'$ is purely imaginary.
+So let's take the imaginary parts of both sides:
+
+$$f'(x) = \frac{Im(f(x+ih))}{h} + \mathcal{O}(h)$$
+
+since $Im(f(x)) = 0$ (since it's real valued!). Thus with a sufficiently small
+choice of $h$, this is the *complex step differentiation* formula for calculating
+the derivative.
+
+
+> But to understand the computational advantage, recal that $x$ is pure real, and thus $x+ih$ is an imaginary number where **the $h$ never directly interacts with $x$** since a complex number is a two dimensional number where you keep the two pieces separate. Thus there is no numerical cancellation by using a small value of $h$, and thus, due to the relative precision of floating point numbers, both the real and imaginary parts will be computed to (approximately) 16 digits of accuracy for any choice of $h$.
+
+# Derivatives as nilpotent sensitivities
+
+The derivative measures the **sensitivity** of a function, i.e. how much the
+function output changes when the input changes by a small amount $\epsilon$:
+
+$$f(a + \epsilon) = f(a) + f'(a) \epsilon + o(\epsilon).$$
+
+In the following we will ignore higher-order terms; **formally we set
+$\epsilon^2 = 0$.** This form of analysis can be made rigorous through a form
+of non-standard analysis called *Smooth Infinitesimal Analysis*, though
+note that nilpotent infinitesimal requires *constructive logic*, and thus proof
+by contradiction is not allowed in this logic due to a lack of the *law of the
+excluded middle*.
+
+A function $f$ will be represented by its value $f(a)$ and derivative $f'(a)$,
+encoded as the coefficients of a degree-1 (Taylor) polynomial in $\epsilon$:
+
+$$f \rightsquigarrow f(a) + \epsilon f'(a)$$
+
+>Therefore this is a lot like a complex number  but here $\epsilon$ acts as a signifier just like complex $i$ does for coplex numbers.
+
+Conversely, if we have such an expansion in $\epsilon$ for a given function $f$,
+then we can identify the coefficient of $\epsilon$ as the derivative of $f$.
+
+---
+
+# Dual numbers
+
+Thus, to extend the idea of complex step differentiation beyond complex analytic
+functions, we define a new number type, the *dual number*. A dual number is a
+multidimensional number where the sensitivity of the function is propagated
+along the dual portion.
+
+Here we will now start to use $\epsilon$ as a dimensional signifier, like $i$,
+$j$, or $k$ for quaternion numbers. In order for this to work out, we need
+to derive an appropriate algebra for our numbers. To do this, we will look
+at Taylor series to make our algebra reconstruct differentiation.
+
+Note that the chain rule has been explicitly encoded in the derivative part.
+
+$$f(a + \epsilon) = f(a) + \epsilon f'(a)$$
+
+to first order. If we have two functions
+
+$$f \rightsquigarrow f(a) + \epsilon f'(a)$$
+$$g \rightsquigarrow g(a) + \epsilon g'(a)$$
+
+then we can manipulate these Taylor expansions to calculate combinations of
+these functions as follows. Using the nilpotent algebra, we have that:
+
+$$(f + g) = [f(a) + g(a)] + \epsilon[f'(a) + g'(a)]$$
+
+$$(f \cdot g) = [f(a) \cdot g(a)]  + \epsilon[f(a) \cdot g'(a) + g(a) \cdot f'(a) ]$$
+> Notice that the $f\prime(a) \cdot g\prime(a)\epsilon^{2}$ term is 0 since, we forced $\epsilon^{2}=0$.
+
+From these we can *infer* the derivatives by taking the component of $\epsilon$.
+These also tell us the way to implement these in the computer.
+
+---
+
+# Computer representation
+
+Setup (not necessary from the REPL):
+
+```julia
+using InteractiveUtils  # only needed when using Weave
+```
+
+Each function requires two pieces of information and some particular "behavior",
+so we store these in a `struct`. It's common to call this a "dual number":
+
+```julia
+struct Dual{T}
+    val::T   # value
+    der::T  # derivative
+end
+```
+
+Each `Dual` object represents a function. We define arithmetic operations to
+mirror performing those operations on the corresponding functions.
+
+We must first import the operations from `Base`:
+
+```julia
+Base.:+(f::Dual, g::Dual) = Dual(f.val + g.val, f.der + g.der)
+Base.:+(f::Dual, α::Number) = Dual(f.val + α, f.der)
+Base.:+(α::Number, f::Dual) = f + α
+
+#=
+You can also write:
+import Base: +
+f::Dual + g::Dual = Dual(f.val + g.val, f.der + g.der)
+=#
+
+Base.:-(f::Dual, g::Dual) = Dual(f.val - g.val, f.der - g.der)
+
+# Product Rule
+Base.:*(f::Dual, g::Dual) = Dual(f.val*g.val, f.der*g.val + f.val*g.der)
+Base.:*(α::Number, f::Dual) = Dual(f.val * α, f.der * α)
+Base.:*(f::Dual, α::Number) = α * f
+
+# Quotient Rule
+Base.:/(f::Dual, g::Dual) = Dual(f.val/g.val, (f.der*g.val - f.val*g.der)/(g.val^2))
+Base.:/(α::Number, f::Dual) = Dual(α/f.val, -α*f.der/f.val^2)
+Base.:/(f::Dual, α::Number) = f * inv(α) # Dual(f.val/α, f.der * (1/α))
+
+Base.:^(f::Dual, n::Integer) = Base.power_by_squaring(f, n)  # use repeated squaring for integer powers
+```
+
+We can now define `Dual`s and manipulate them:
+
+```julia
+f = Dual(3, 4)
+g = Dual(5, 6)
+
+f + g
+```
+The above gives `Dual(8, 10)` as the answer.
+```julia
+f * g
+```
+The above gives `Dual(15, 38)` as the answer.
+
+```julia
+f * (g + g)
+```
+The above gives `Dual(30, 76)` as the answer.
+
+---
+
+# Performance
+
+It seems like we may have introduced significant computational overhead by
+creating a new data structure, and associated methods. Let's see how the
+performance is:
+
+```julia
+add(a1, a2, b1, b2) = (a1+b1, a2+b2)
+```
+
+```julia
+add(1, 2, 3, 4)
+
+using BenchmarkTools
+a, b, c, d = 1, 2, 3, 4
+@btime add($(Ref(a))[], $(Ref(b))[], $(Ref(c))[], $(Ref(d))[])
+```
+Benchmarking the above gives 1.799ns.
+```julia
+a = Dual(1, 2)
+b = Dual(3, 4)
+
+add(j1, j2) = j1 + j2
+add(a, b)
+@btime add($(Ref(a))[], $(Ref(b))[])
+```
+Benchmarking the above gives 1.399ns.
+
+> Note that this is quite counter intuitive since we expected the Dual operatons to have some overhead due to the fact that thae compiler has to refer to multiple dispatches for addition, subtraction etc.. Now , we have **type stabilty** implying that at runtime the compiler knows exactly which function to perform.
+
+It seems like we have lost *no* performance.
+```julia
+@code_native add(1, 2, 3, 4)
+```
+
+```julia
+@code_native add(a, b)
+```
+
+We see that the data structure itself has disappeared, and we basically have a
+standard Julia tuple.
+
+---
+
+# Defining Higher Order Primitives
+
+We can also define functions of `Dual` objects, using the chain rule.
+To speed up our derivative function, we can directly hardcode the derivative
+of known functions which we call *primitives*. If `f` is
+a `Dual` representing the function $f$, then `exp(f)` should be a `Dual`
+representing the function $\exp \circ f$, i.e. with value $\exp(f(a))$ and
+derivative $(\exp \circ f)'(a) = \exp(f(a)) \, f'(a)$:
+
+```julia
+import Base: exp
+```
+
+```julia
+exp(f::Dual) = Dual(exp(f.val), exp(f.val) * f.der)
+```
+
+```julia
+f
+```
+
+```julia
+exp(f)
+```
+---
+# Differentiating arbitrary functions
+
+For functions where we don't have a rule, we can recursively do dual number
+arithmetic within the function until we hit primitives where we know the derivative,
+and then use the chain rule to propagate the information back up.
+Under this algebra, we can represent $a + \epsilon$ as `Dual(a, 1)`.
+Thus, applying `f` to `Dual(a, 1)` should give `Dual(f(a), f'(a))`. This is thus
+a 2-dimensional number for calculating the derivative without floating point
+error, **using the compiler to transform our equations into dual number arithmetic**.
+To to differentiate an arbitrary function, we define a generic function and then
+change the algebra.
+
+```julia
+h(x) = x^2 + 2
+a = 3
+xx = Dual(a, 1)
+```
+
+Now we simply evaluate the function `h` at the `Dual` number `xx`:
+
+```julia
+h(xx)
+```
+
+The first component of the resulting `Dual` is the value $h(a)$, and the
+second component is the derivative, $h'(a)$!
+
+We can codify this into a function as follows:
+
+```julia
+derivative(f, x) = f(Dual(x, one(x))).der
+```
+
+Here, `one` is the function that gives the value $1$ with the same type as
+that of `x`.
+
+Finally we can now calculate derivatives such as
+
+```julia
+derivative(x -> 3x^5 + 2, 2)
+```
+
+As a bigger example, we can take a pure Julia `sqrt` function and differentiate
+it by changing the internal algebra:
+
+```julia
+function newtons(x)
+   a = x
+   for i in 1:300
+       a = 0.5 * (a + x/a)
+   end
+   a
+end
+@show newtons(2.0)
+@show (newtons(2.0+sqrt(eps())) - newtons(2.0))/ sqrt(eps())
+newtons(Dual(2.0,1.0))
+```
