@@ -47,3 +47,38 @@ Base.:/(f::Dual, α::Number) = f * inv(α) # Dual(f.val/α, f.der * (1/α))
 #notice that the above call the multiple dispatches of *, + and - we had defined before.
 
 Base.:^(f::Dual, n::Integer) = Base.power_by_squaring(f, n)  # use repeated squaring for integer powers
+
+f = Dual(3, 4)
+g = Dual(5, 6)
+
+f + g
+
+f*g
+
+f*(g+g)
+
+add(a1, a2, b1, b2) = (a1+b1, a2+b2)
+
+add(1, 2, 3, 4)
+
+using BenchmarkTools
+a, b, c, d = 1, 2, 3, 4
+@btime add($(Ref(a))[], $(Ref(b))[], $(Ref(c))[], $(Ref(d))[])
+
+a = Dual(1, 2)
+b = Dual(3, 4)
+
+add(j1, j2) = j1 + j2
+add(a, b)
+@btime add($(Ref(a))[], $(Ref(b))[])
+#notice that the above is actually faster than the add function we had defined. Notice below in the @code_native add(a,b)we have vmov.. and vpadd..
+#which are basically SIMD operations and hence these are a bit faster.
+
+@code_native add(1, 2, 3, 4)
+
+@code_native add(a, b)
+
+import Base: exp
+exp(f::Dual) = Dual(exp(f.val), exp(f.val) * f.der) #function is e^f(x) whose definition is f'(x) e^f(x) and f'(x) is f.der according to our definitoinions
+f
+exp(f)
