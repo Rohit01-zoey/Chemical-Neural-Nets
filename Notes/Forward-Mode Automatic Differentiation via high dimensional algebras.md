@@ -107,7 +107,9 @@ To start understanding how to compute derivatives on a computer, we start with
 the derivative is:
 
 $$f'(x) = \lim_{\epsilon \rightarrow 0} \frac{f(x+\epsilon)-f(x)}{\epsilon}$$
+> Notice where the problem is. Recall what we did above. When we do $\epsilon 2$ = (1+$\epsilon$) - 1, the compiler cut off many digits off of $\epsilon$. Now , when we divide this value by $\epsilon$ again, we shift the number in terms of the power/order which means our error increases. So, we will get few good digits at first, but soon we would get only junk digits.
 
+> One can build a random number generator from this :)
 * Finite differencing directly follows from this definition by choosing a small
 $\epsilon$.
 * However, choosing a good $\epsilon$ is very difficult. 
@@ -119,3 +121,29 @@ accuracy, and then dividing by $10^{-6}$ simply brings those 10 digits back up
 to the correct relative size.
 
 ![](https://www.researchgate.net/profile/Jongrae_Kim/publication/267216155/figure/fig1/AS:651888458493955@1532433728729/Finite-Difference-Error-Versus-Step-Size.png)
+
+
+> This means that we want to choose $\epsilon$ small enough that the
+$\mathcal{O}(\epsilon^2)$ error of the truncation is balanced by the $O(1/\epsilon)$
+roundoff error. Under some minor assumptions, one can argue that the average
+best point is $\sqrt(E)$, where E is machine epsilon
+
+```julia-repl
+julia> @show eps(Float64)
+eps(Float64) = 2.220446049250313e-16
+2.220446049250313e-16
+
+julia> @show sqrt(eps(Float64))
+sqrt(eps(Float64)) = 1.4901161193847656e-8
+1.4901161193847656e-8
+
+```
+This means we should not expect better than 8 digits of accuracy, even when
+things are good with finite differencing.
+
+![](../Images/derivative%20vs%20epsilon.png)
+!! The above image uses `h` in place of $\epsilon$. That is, that while differentiating a function `f` we must do $\frac{f(x+h) - f(x)}{h}$ 
+> Notice that in the above image we have the  optimum $\epsilon$ of the order $10^{-8}$ which is what we had calculated as the square root of the machine epsilon!!!
+
+The centered difference formula is a little bit better, but this picture
+suggests something much better...
