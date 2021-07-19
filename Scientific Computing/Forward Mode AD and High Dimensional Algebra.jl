@@ -82,3 +82,32 @@ import Base: exp
 exp(f::Dual) = Dual(exp(f.val), exp(f.val) * f.der) #function is e^f(x) whose definition is f'(x) e^f(x) and f'(x) is f.der according to our definitoinions
 f
 exp(f)
+
+h(x) = x^2 + 2
+a = 3
+xx = Dual(a, 1)
+xy = Dual(a, 2)
+h(xx)
+h(xy)
+#notice that for xy, the derivative part is twice of what it it was for h(xx) and this is what we had expected.
+
+
+derivative(f, x) = f(Dual(x, one(x))).der
+#one(x) gives us a '1' of the same type of x since we had made the val and der of any Dual number the same type and hence one
+# should be careful here.
+
+derivative(x -> 3x^5 + 2, 2)
+
+function newtons(x)
+   a = x
+   for i in 1:300
+       a = 0.5 * (a + x/a) #iterative process of calculaing the square root of a number.
+       #since its just +, / etc it's compatible with our dual numbers.
+   end
+   a
+end
+@show newtons(2.0)
+@show (newtons(2.0+sqrt(eps())) - newtons(2.0))/ sqrt(eps())
+
+
+newtons(Dual(2.0,1.0))

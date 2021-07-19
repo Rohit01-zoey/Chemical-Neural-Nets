@@ -378,6 +378,9 @@ f
 exp(f)
 ```
 ---
+> If we do $f(x+\epsilon)$ what should come is, by definition $f(x) + f\prime(x)\epsilon$. Notice that we get this via our chain rule too. Therefore, now we have the derivative of the function is the $\epsilon$ part of the function.
+
+> Consequently if we were given $f(x+2\epsilon)\rightarrow f(x) + 2f\prime(x)\epsilon$
 # Differentiating arbitrary functions
 
 For functions where we don't have a rule, we can recursively do dual number
@@ -395,6 +398,7 @@ h(x) = x^2 + 2
 a = 3
 xx = Dual(a, 1)
 ```
+> (One can also take the dual number Dual(a, 2) and see what happens to the final answer of h(xx)) [See the .jl file for the output]
 
 Now we simply evaluate the function `h` at the `Dual` number `xx`:
 
