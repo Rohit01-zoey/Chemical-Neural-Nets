@@ -32,8 +32,7 @@ function choose(i, j)
         num = 1
         den = 1
     end
-    return num/den
-end
+      return num/den end
 
 
 function propensity(k, x, y, coef_x, coef_y)
@@ -157,6 +156,9 @@ plot(state_s, label = "S(t)")
 plot!(state_e, label = "E(t)")
 plot!(state_se, label = "SE(t)")
 plot!(state_p, label = "P(t)")
+# See rxn2 plot.png from images directry of the repo
+
+
 
 #r rxns and n no of species
 s° = [] #initial popualtion of species
@@ -164,3 +166,39 @@ s = [] #current pop
 λ = [[]] #rΧn matrix
 δ = [[]] #rXn matrix
 state = [[]]
+
+s° = [5.]
+s = s° # the species of the rxn
+#defining the coefficient matrix [γ1, γ2, γ3]^T
+γ1 = [1]
+γ2 = [1]
+γ3 = [0]
+
+#defining the direction matrix
+δ1 = [1]
+δ2 = [-1]
+δ3 = [1]
+
+#defining the rate constant matrix
+c = [1.0, 2.0, 50.]
+
+state_x = [s[1]]
+for _ in 1:700
+    λ1 = propensity(c[1], s, γ1)
+    λ2 = propensity(c[2], s, γ2)
+    λ3 = propensity(c[3], s, γ3)
+    e1 = exponential_my(λ1)
+    e2 = exponential_my(λ2)
+    e3 = exponential_my(λ3)
+    if (e1 == min(e1, e2, e3))
+        s = s .+ δ1
+    elseif e2 == min(e1, e2, e3)
+        s = s .+ δ2
+    elseif e3 == min(e1, e2, e3)
+        s = s .+ δ3
+    end
+    push!(state_x, s[1])
+end
+
+
+plot(state_x, label = "x(t)")
