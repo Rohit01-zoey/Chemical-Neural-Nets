@@ -439,3 +439,127 @@ end
 @show (newtons(2.0+sqrt(eps())) - newtons(2.0))/ sqrt(eps())
 newtons(Dual(2.0,1.0))
 ```
+
+---
+
+# Higher dimensions
+
+How can we extend this to higher dimensional functions? For example, we wish
+to differentiate the following function $f: \mathbb{R}^2 \to \mathbb{R}$:
+
+```julia
+ff(x, y) = x^2 + x*y
+```
+
+Recall that the **partial derivative** $\partial f/\partial x$ is defined by
+fixing $y$ and differentiating the resulting function of $x$:
+
+
+```julia
+a, b = 3.0, 4.0
+
+ff_1(x) = ff(x, b)  # single-variable function
+```
+
+Since we now have a single-variable function, we can differentiate it:
+
+```julia
+derivative(ff_1, a)
+```
+
+Under the hood this is doing
+
+```julia
+ff(Dual(a, one(a)), b)
+```
+
+Similarly, we can differentiate with respect to $y$ by doing
+
+```julia
+ff_2(y) = ff(a, y)  # single-variable function
+
+derivative(ff_2, b)
+```
+
+Note that we must do **two separate calculations** to get the two partial
+derivatives; in general, calculating the gradient $\nabla$ of a function
+$f:\mathbb{R}^n \to \mathbb{R}$ requires $n$ separate calculations.
+
+---
+# Implementation of higher-dimensional forward-mode AD
+
+We can implement derivatives of functions $f: \mathbb{R}^n \to \mathbb{R}$
+by adding several independent partial derivative components to our dual numbers.
+
+We can think of these as $\epsilon$ perturbations in different directions,
+which satisfy $\epsilon_i^2 = \epsilon_i \epsilon_j = 0$, and
+we will call $\epsilon$ the vector of all perturbations. Then we have
+
+$$f(a + \epsilon) = f(a) + \nabla f(a) \cdot \epsilon + \mathcal{O}(\epsilon^2),$$
+
+where $a \in \mathbb{R}^n$ and $\nabla f(a)$ is the **gradient** of $f$ at $a$,
+i.e. the vector of partial derivatives in each direction.
+$\nabla f(a) \cdot \epsilon$ is the **directional derivative** of $f$ in the
+direction $\epsilon$.
+
+We now proceed similarly to the univariate case:
+
+$$(f + g)(a + \epsilon) = [f(a) + g(a)] + [\nabla f(a) + \nabla g(a)] \cdot \epsilon$$
+
+$$(f\cdot g)(a + \epsilon) = [f(a) + \nabla f(a) \cdot \epsilon ] \, [g(a) + \nabla g(a) \cdot \epsilon]$$
+
+$$= f(a) g(a) + [f(a) \nabla g(a) + g(a) \nabla f(a)] \cdot \epsilon.$$
+
+We will use the `StaticArrays.jl` package for efficient small vectors:
+
+```julia
+using StaticArrays
+
+struct MultiDual{N,T}
+    val::T
+    derivs::SVector{N,T}
+end
+
+import Base: +, *
+
+function +(f::MultiDual{N,T}, g::MultiDual{N,T}) where {N,T}
+    return MultiDual{N,T}(f.val + g.val, f.derivs + g.derivs)
+end
+
+function *(f::MultiDual{N,T}, g::MultiDual{N,T}) where {N,T}
+    return MultiDual{N,T}(f.val * g.val, f.val .* g.derivs + g.val .* f.derivs)
+end
+```
+
+```julia
+gg(x, y) = x*x*y + x + y
+
+(a, b) = (1.0, 2.0)
+
+xx = MultiDual(a, SVector(1.0, 0.0))
+yy = MultiDual(b, SVector(0.0, 1.0))
+
+gg(xx, yy)
+
+```
+
+We can calculate the Jacobian of a function $\mathbb{R}^n \to \mathbb{R}^m$
+by applying this to each component function:
+
+```julia
+ff(x, y) = SVector(x*x + y*y , x + y)
+
+ff(xx, yy)
+```
+
+It would be possible (and better for performance in many cases) to
+store all of the partials in a matrix instead.
+
+Forward-mode AD is implemented in a clean and efficient way in the
+`ForwardDiff.jl` package:
+
+```julia
+using ForwardDiff, StaticArrays
+
+ForwardDiff.gradient( xx -> ( (x, y) = xx; x^2 * y + x*y ), [1, 2])
+```

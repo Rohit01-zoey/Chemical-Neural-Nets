@@ -91,12 +91,22 @@ h(xx)
 h(xy)
 #notice that for xy, the derivative part is twice of what it it was for h(xx) and this is what we had expected.
 
+#assuming that xx is of the form (f(x), f'(x)) so we are saying that assume at a certain 'x' we have f(x) = 3 and f'(x) = 1 for a certain f
+#thus now we want h(xx) which is basically saying we want h(f(x)) which by previous notions we would have the answer as Dual(h(f(x)), h'(f(x)̇×f'(x))) which is
+# basically Dual(h(3), h'(3)×f'(x)) = Dual(11, 6×1) = Dual(11, 6)
+#notice by using the above defined rules for arithmetic of Dual numbers we still get the same answer.
+
 
 derivative(f, x) = f(Dual(x, one(x))).der
 #one(x) gives us a '1' of the same type of x since we had made the val and der of any Dual number the same type and hence one
 # should be careful here.
+#notice what's happening above … again like above assume that a function 'g' exists such  that ∃ yϵ \mathbb{R} such that g(y) = x (parameter) and
+#g'(y) = one(x) as given in the defined function. So now we say we want the composition of f(g(y)) and this spits out a Dual number.
+#as expected this Dual number is Dual(f(g(y)), f'(g(y))×g'(y))  = Dual(f(x), f'(x)×1) = Dual(f(x), f'(x)) which is what we want.
+#so here that one(x) is basically telling us how many times to scale f'(x)
 
 derivative(x -> 3x^5 + 2, 2)
+
 
 function newtons(x)
    a = x
@@ -111,3 +121,23 @@ end
 
 
 newtons(Dual(2.0,1.0))
+#notiice that the 2 calculations made for the square root of a number are correct upto 8 dp which is consistent with our previous discussion on precision
+
+
+## Higher dimensions
+
+ff(x, y) = x^2 + x*y
+
+
+a, b = 3.0, 4.0
+
+ff_1(x) = ff(x, b)  # single-variable function
+
+
+ff(Dual(a, one(a)), b)
+
+ff_2(y) = ff(a, y)  # single-variable function
+
+derivative(ff_2, b)
+
+#---
