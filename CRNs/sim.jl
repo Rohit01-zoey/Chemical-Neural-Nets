@@ -160,12 +160,6 @@ plot!(state_p, label = "P(t)")
 
 
 
-#r rxns and n no of species
-s° = [] #initial popualtion of species
-s = [] #current pop
-λ = [[]] #rΧn matrix
-δ = [[]] #rXn matrix
-state = [[]]
 
 s° = [5.]
 s = s° # the species of the rxn
@@ -202,3 +196,129 @@ end
 
 
 plot(state_x, label = "x(t)")
+
+
+using Catalyst
+using ModelingToolkit
+using StaticArrays
+
+#r rxns and n no of species
+s° = [] #initial popualtion of species - length = n
+s = [] #current pop - length = n
+λ = [[]] #rΧn matrix
+δ = [[]] #rXn matrix
+state = [[]]
+
+rn = @reaction_network mine begin
+    α, S + I --> 2I
+    β, I --> R
+end α β
+
+n = length(species(rn))
+r = numreactions(rn)
+s° =[] #defined by user
+s = [1, 2,3 ]
+speciesmap(rn)
+
+paramsmap(rn)
+arr = []
+for (i, p) in enumerate(parameters(rn))
+    append!(arr, i)
+end
+arr
+((i, p) for (i,p) in enumerate(parameters(rn))) #taken from official documentation
+k = []
+γ = substoichmat(rn; smap=speciesmap(rn))
+c = rate_constants!(k, rn)
+k
+λ = []
+for j in 1:r
+    append!(λ, propensity(k[j], s, γ[j, :]))
+end
+λ
+δ = netstoichmat(rn; smap=speciesmap(rn))
+minimum(exponential_my.(λ))
+γ[1,:]
+
+
+#---
+
+rn = @reaction_network begin
+    c1, X --> 2X
+    c2, X --> 0
+    c3 , 0 --> X
+end c1 c2 c3
+speciesmap(rn)
+function rate_constants!(k, rn)
+    for (i, p) in enumerate(parameters(rn))
+        append!(k, i)
+    end
+end
+
+function solve_my_rxn(rn, c, s°, iter)
+    state = s°'
+    n = numspecies(rn)
+    r = numreactions(rn)
+    @assert length(s°) == n
+    s = s°
+    γ = substoichmat(rn; smap=speciesmap(rn))
+    #rate_constants!(c, rn)
+    δ = netstoichmat(rn; smap=speciesmap(rn))
+    for _ in 1:iter
+        λ = []
+        for j in 1:r
+            append!(λ, propensity(c[j], s, γ[j, :]))
+        end
+        e =exponential_my.(λ)
+        for m in 1:r
+            if(e[m] == minimum(e))
+                s = s .+ δ[m, :]
+            end
+        end
+        state = [state; s']
+    end
+    return state end
+c = [1.0, 2.0, 50.]
+u = [5.]
+state = []
+state = solve_my_rxn(rn, c ,u, 600)
+
+state
+
+
+function plot_my_rxn!(rn, state)
+    mapping = speciesmap(rn)
+    p1  = plot()
+    for (i, j) in mapping
+        plot!(state[:, j] , label = string(i))
+    end
+    return p1
+end
+plot_my_rxn!(rn, state)
+
+
+
+
+
+
+
+
+#---
+
+@parameters β γ t
+@variables S(t) I(t) R(t)
+
+rxs = [Reaction(β, [S,I], [I], [1,1], [2])
+       Reaction(γ, [I], [R])]
+rs  = ReactionSystem(rxs, t, [S,I,R], [β,γ])
+
+u₀map    = [S => 999.0, I => 1.0, R => 0.0]
+parammap = [β => 1/10000, γ => 0.01]
+
+rs
+
+numspecies(rs)
+substoichmat(rs; smap=speciesmap(rs))
+parameters(rs)
+k = []
+rate_constants!(k, rs)
