@@ -563,3 +563,257 @@ using ForwardDiff, StaticArrays
 
 ForwardDiff.gradient( xx -> ( (x, y) = xx; x^2 * y + x*y ), [1, 2])
 ```
+
+---
+
+# Directional derivative and gradient of functions $f: \mathbb{R}^n \to \mathbb{R}$
+
+For a function $f: \mathbb{R}^n \to \mathbb{R}$ the basic operation is the
+**directional derivative**:
+
+$$\lim_{\epsilon \to 0} \frac{f(\mathbf{x} + \epsilon \mathbf{v}) - f(\mathbf{x})}{\epsilon} =
+[\nabla f(\mathbf{x})] \cdot \mathbf{v},$$
+
+where $\epsilon$ is still a single dimension and $\nabla f(\mathbf{x})$ is the
+direction in which we calculate.
+>Partial derivatives are the directional derivatives with respect to some basis function $\mathbf{v}$. So, in other words if we let $\mathbf{v} = (1, 0)$ then we get the partial derivative with respect to the variable corresponding to the first of the basis component $\mathbf{v}$ and similarly $\mathbf{v} = (0, 1)$ then we get the partial derivative with respect to the variable corresponding to the second of the basis component.
+
+We can directly do this using the same simple `Dual` numbers as above,
+using the *same* $\epsilon$, e.g.
+
+$$f(x, y) = x^2  \sin(y)$$
+
+$$f(x_0 + a\epsilon, y_0 + b\epsilon) = (x_0 + a\epsilon)^2  \sin(y_0 + b\epsilon) \\
+= x_0^2  \sin(y_0) + \epsilon[2ax_0  \sin(y_0) + x_0^2 b \cos(y_0)] + o(\epsilon)$$
+
+so we have indeed calculated $\nabla f(x_0, y_0) \cdot \mathbf{v},$ where
+$\mathbf{v} = (a, b)$ are the components that we put into the derivative
+component of the `Dual` numbers.
+
+If we wish to calculate the directional derivative in another direction, we
+could repeat the calculation with a different $\mathbf{v}$. A better solution
+is to use another independent epsilon $\epsilon$, expanding
+$$x = x_0 + a_1 \epsilon_1 + a_2 \epsilon_2$$
+ and putting
+$\epsilon_1 \epsilon_2 = 0$.
+
+In particular, if we wish to calculate the gradient itself,
+$\nabla f(x_0, y_0)$, we need to calculate both partial derivatives, which
+corresponds to two directional derivatives, in the directions
+$(1, 0)$ and $(0, 1)$, respectively.
+
+---
+
+# Forward-Mode AD as jvp
+
+Note that another representation of the directional derivative is $f'(x)v$,
+where $f'(x)$ is the Jacobian or total derivative of $f$ at $x$. To see the
+equivalence of this to a directional derivative, write it out in the standard
+basis:
+
+$$w_i = \sum_{j}^{m} J_{ij} v_{j}$$
+
+That is $J\cdot v^{\small T} = [w_{i}]$ where $w_{i}$ is the $i^{th}$ row.
+
+Recall that $J = [\nabla f_{i}(x)]$ where $\nabla f_{i}(x)$ is the gradient of the $i^{th}$ function and thus forms the $i^{th}$ row of the Jacobian of the function.
+
+Now write out what $J$ means and we see that:
+
+$$w_i = \sum_j^{m} \frac{\partial f_i}{\partial x_j} v_j = \nabla f_i(x) \cdot v$$
+
+**The primitive action of forward-mode AD is $f'(x)v$!**
+
+This is also known as a *Jacobian-vector product*, or *jvp* for short.
+
+We can thus represent vector calculus with multidimensional dual numbers as
+follows. Let $d =[x,y]$, the vector of dual numbers. We can instead represent
+this as:
+
+$$d = d_0 + v_1 \epsilon_1 + v_2 \epsilon_2$$
+
+where $d_0$ is the *primal* vector $[x_0,y_0]$ and the $v_i$ are the vectors
+for the *dual* directions. If you work out this algebra, then note that a
+single application of $f$ to a multidimensional dual number calculates:
+
+$$f(d) = f(d_0) + f'(d_0)v_1 \epsilon_1 + f'(d_0)v_2 \epsilon_2$$
+
+i.e. it calculates the result of $f(x,y)$ and two separate directional derivatives.
+Note that because the information about $f(d_0)$ is shared between the calculations,
+this is more efficient than doing multiple applications of $f$. And of course,
+this is then generalized to $m$ many directional derivatives at once by:
+
+$$d = d_0 + v_1 \epsilon_1 + v_2 \epsilon_2 + \ldots + v_m \epsilon_m$$
+
+---
+
+# Jacobian
+
+For a function $f: \mathbb{R}^n \to \mathbb{R}^m$, we reduce (conceptually,
+although not necessarily in code) to its component functions
+$f_i: \mathbb{R}^n \to \mathbb{R}$, where $f(x) = (f_1(x), f_2(x), \ldots, f_m(x))$.
+
+Then
+
+$$
+f(x + \epsilon v) = (f_1(x + \epsilon v), \ldots, f_m(x + \epsilon v)) \\
+= (f_1(x) + \epsilon[\nabla f_1(x) \cdot v], \dots, f_m(x) + \epsilon[\nabla f_m(x) \cdot v] \\
+= f(x) + [f'(x) \cdot v] \epsilon,$$
+
+To calculate the complete Jacobian, we calculate these directional derivatives
+in the $n$ different directions of the basis vectors, i.e. if
+
+$$d = d_0 + e_1 \epsilon_1 + \ldots + e_n \epsilon_n$$
+
+for $e_i$ the $i$th basis vector, then
+
+$$f(d) = f(d_0) + Je_1 \epsilon_1 + \ldots + Je_n \epsilon_n$$
+
+computes all columns of the Jacobian simultaniously.
+
+To see this recall the following :
+```julia
+ff(x, y) = SVector(x*x + y*y , x + y)
+
+ff(xx, yy)
+```
+
+# Array of Structs Representation
+
+Instead of thinking about a vector of dual numbers, thus we can instead think of
+dual numbers with vectors for the components. But if there are vectors for the
+components, then we can think of the grouping of dual components as a matrix.
+Thus define our multidimensional multi-partial dual number as:
+
+$$D_{0} = [d_{1},d_{2},d_{3},...,d_{n}] \dots\text{Value portion of the dual number}$$
+$$\Sigma = [d_{11}, d_{21}, d_{31}........\\
+         d_{12}, .......\\
+         ............]$$
+$$\epsilon = [\epsilon_1,\epsilon_2,...,\epsilon_m]$$
+$$D = D_0 + \Sigma \epsilon$$
+
+where $D_0$ is a vector in $\mathbb{R}^n$, $\epsilon$ is a vector of
+dimensional signifiers and $\Sigma$ is a matrix in $\mathbb{R}^{n \times m}$
+where $m$ is the number of concurrent differentiation dimensions. Each row
+of this is a dual number, but now we can use this to easily define higher
+dimensional primitives.
+
+For example, let $f(x) = Ax$, matrix multiplication. Then, we can show with
+our dual number arithmetic that:
+
+$$f(D) = A*D_0 + A*\Sigma*\epsilon$$
+
+is how one would compute the value of $f(D_0)$ and the derivative $f'(D_0)$ in
+all directions signified by the columns of $\Sigma$ simultaniously. Using
+multidimensional Taylor series expansions and doing the manipulations like
+before indeed implies that the arithematic on this object should follow:
+
+$$f(D) = f(D_0) + f'(D_0)\Sigma \epsilon$$
+
+where $f'$ is the total derivative or the Jacobian of $f$. This then allows our
+system to be highly efficient by allowing the definition of multidimensional
+functions, like linear algebra, to be primitives of multi-directional
+derivatives.
+
+# Higher derivatives
+
+The above techniques can be extended to higher derivatives by
+*adding more terms to the Taylor polynomial*, e.g.
+
+$$f(a + \epsilon) = f(a) + \epsilon f'(a) + \frac{1}{2} \epsilon^2 f''(a) + o(\epsilon^2).$$
+
+We treat this as a degree-2 (or degree-$n$, in general) polynomial and do
+polynomial arithmetic to calculate the new polynomials. The coefficients of
+powers of $\epsilon$ then give the higher-order derivatives.
+
+For example, for a function $f: \mathbb{R}^n \to \mathbb{R}$ we have
+
+$$f(x + \epsilon v) = f(x) + \epsilon \left[ \sum_i (\partial_i f)(x) v_i \right] + \frac{1}{2}\epsilon^2 \left[ \sum_i \sum_j (\partial_{i,j} f) v_i v_j \right]$$
+
+using `Dual` numbers with a single $\epsilon$ component.
+In this way we can compute coefficients of the (symmetric) Hessian matrix.
+
+# Application: solving nonlinear equations using the Newton method
+
+As an application, we will see how to solve nonlinear equations of the form
+$$f(x) = 0$$
+for functions $f: \mathbb{R}^n \to \mathbb{R}^n$.
+
+Since in general we cannot do anything with nonlinearity, we try to reduce it
+(approximate it) with something linear. Furthermore, in general we know that it
+is not possible to solve nonlinear equations in closed form (even for
+polynomials of degree $\ge 5$), so we will need some kind of iterative method.
+
+We start from an initial guess $x_0$. The idea of the **Newton method** is to
+follow the tangent line to the function $f$ at the point $x_0$ and find where
+it intersects the $x$-axis; this will give the next iterate $x_1$.
+
+Algebraically, we want to solve $f(x_1) = 0$. Suppose that
+$x_1 = x_0 + \delta$ for some $\delta$ that is currently unknown and which we
+wish to calculate.
+
+Assuming $\delta$ is small, we can expand:
+
+$$f(x_1) = f(x_0 + \delta) = f(x_0) + Df(x_0) \cdot \delta + \mathcal{O}(\| \delta \|^2).$$
+
+Since we wish to solve
+
+$$f(x_0 + \delta) \simeq 0,$$
+
+we put
+
+$$f(x_0) + Df(x_0) \cdot \delta = 0,$$
+
+so that *mathematically* we have
+
+$$\delta = -[Df(x_0)]^{-1} \cdot f(x_0).$$
+
+Computationally we prefer to solve the matrix equation
+
+$$J \delta = -f(x_0),$$
+
+where $J := Df(x_0)$ is the Jacobian of the function; Julia uses the syntax
+`\` ("backslash") for solving linear systems in an efficient  way:
+
+```julia
+using ForwardDiff, StaticArrays
+
+function newton_step(f, x0)
+    J = ForwardDiff.jacobian(f, x0)
+    δ = J \ f(x0)
+
+    return x0 - δ
+end
+
+function newton(f, x0)
+    x = x0
+
+    for i in 1:10
+        x = newton_step(f, x)
+        @show x
+    end
+
+    return x
+end
+
+ff(xx) = ( (x, y) = xx;  SVector(x^2 + y^2 - 1, x - y) )
+
+x0 = SVector(3.0, 5.0)
+
+x = newton(ff, x0)
+
+```
+
+# Conclusion
+
+To make derivative calculations efficient and correct, we can move to higher
+dimensional numbers. In multiple dimensions, these then allow for multiple
+directional derivatives to be computed simultaniously, giving a method for
+computing the Jacobian of a function $f$ on a single input. This is a direct
+application of using the compiler as part of a mathematical framework.
+
+## References
+- John L. Bell, *An Invitation to Smooth Infinitesimal Analysis*,
+  http://publish.uwo.ca/~jbell/invitation%20to%20SIA.pdf
+- Bell, John L. *A Primer of Infinitesimal Analysis*
+- Nocedal & Wright, *Numerical Optimization*, Chapter 8
+- Griewank & Walther, *Evaluating Derivatives*

@@ -1,3 +1,4 @@
+using ForwardDiff
 eps(Float64)
 #eps(Float64) is the smallest number such that 1+E does NOT equal 1
 1.1 + 1e-16 #ideally should yield 1.10000000... but still yields 1.1 as the answer.
@@ -141,3 +142,82 @@ ff_2(y) = ff(a, y)  # single-variable function
 derivative(ff_2, b)
 
 #---
+
+using StaticArrays
+#a MultiDual number is similar to a Dual number but here we have the value of the function at a certain point and then the derivative "vector" (gradient of the function)
+
+struct MultiDual{N,T}
+    val::T
+    derivs::SVector{N,T}
+end
+
+import Base: +, *
+
+function +(f::MultiDual{N,T}, g::MultiDual{N,T}) where {N,T}
+    return MultiDual{N,T}(f.val + g.val, f.derivs + g.derivs)
+end
+
+function *(f::MultiDual{N,T}, g::MultiDual{N,T}) where {N,T}
+    return MultiDual{N,T}(f.val * g.val, f.val .* g.derivs + g.val .* f.derivs)
+end
+gg(x, y) = x*x*y + x + y
+
+(a, b) = (1.0, 2.0)
+
+xx = MultiDual(a, SVector(1.0, 0.0))
+yy = MultiDual(b, SVector(0.0, 1.0))
+#so as before with Dual numbers here we have xx viz equivalent to saying that ∃ f∈ R^{2} → R^{2} and (x, y) ∈ R^{2} such that f(x, y) = a = 1.0
+#and ∇f = (∂f/∂x, ∂f/∂y) = (1.0, 0.0) as the value is initialised.
+#similarly we have the next variable yy which is defined the same way.
+
+gg(xx, yy)
+#when we do the above we in some sense take a composition of the functions as defined in the previous comment
+#so we have f and g as 2 function such that the vlaue of the 2 functions and their gradient at a certain point say 'z'
+#is as defined above.. then when we do gg(xx, yy) we are doing the following composition
+#gg(f(z), g(z)) and since we expect this to spit out a MutliDual number we can expect the output.
+#so we let this z = (m, n) notice that z is NOT a  MutliDual number
+# The non-ϵ part of the MultiDual numbaer is just simple arithmertic and can be calculated as gg(a, b)
+#while the ϵ part is the ∇gg(f(z), g(z)) = ( ∂gg(f(z), g(z))/∂f(z) × ∂f(z)/∂m, ∂gg(f(z), g(z))/∂g(z) × ∂g(z)/∂n )
+# we have to look at the above terms with care. Notice that f(z) is just x is our function definition and like wise g(z) is y is our function definiion
+# so when we want the partial derivatives ∂f(z)/dm  which is nothing but 1 from the initialised value of variable xx
+#and similaryl we have ∂g(z)/∂n = 1 from the intialised value of the variable yy
+# then we have the partal derivatives : f(z) is just x is our function definition and like wise g(z) is y is our function definiion
+# so ∂gg(f(z), g(z))/∂f(z) = ∂gg(x, y)/∂x = 2xy + 1 and ∂gg(f(z), g(z))/∂g(z) = ∂gg(x, y)/∂y = x*x + 1
+#now we know that x = f(z) = a = 1 and y = g(z) = b = 2 thus we have 5, 2 respectively
+#thus finally our derivative part looks like (5, 2) which is the  output as seen above.
+
+ff(x, y) = SVector(x*x + y*y , x + y)
+
+ff(xx, yy)
+#following the above logic we can expect the out put for ff(xx, yy)
+#! also notice that the ff(xx, yy) also is the jacobian of the fucntion ff
+#[df1/dx,   df1/dy
+# df2/dx,   df2/dy]
+
+
+ForwardDiff.gradient( xx -> ( (x, y) = xx; x^2 * y + x*y ), [1, 2])
+
+function newton_step(f, x0)
+    J = ForwardDiff.jacobian(f, x0)
+    δ = J \ f(x0)
+
+    return x0 - δ
+end
+
+function newton(f, x0)
+    x = x0
+
+    for i in 1:10
+        x = newton_step(f, x)
+        @show x
+    end
+
+    return x
+end
+
+ff(xx) = ( (x, y) = xx;  SVector(x^2 + y^2 - 1, x - y) )
+
+x0 = SVector(3.0, 5.0)
+
+x = newton(ff, x0)
+#notice that the function  convereges.... \condt to next lecture .....

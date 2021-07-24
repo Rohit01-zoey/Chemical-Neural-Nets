@@ -36,6 +36,9 @@ function choose(i, j)
         den = 1
     end
       return num/den end
+function choose_ups(i, j)
+    return factorial(i)/(factorial(j)*factorial(i-j))
+end
 function propensity(k, s, coef)
           @assert length(s)==length(coef)
           prop = k
@@ -60,6 +63,7 @@ function solve_my_rxn(rn, c, s°, iter)
     n = numspecies(rn)
     r = numreactions(rn)
     @assert length(s°) == n
+    @assert length(c) == r
     s = s°
     γ = substoichmat(rn; smap=speciesmap(rn))
     #rate_constants!(c, rn)
@@ -73,9 +77,10 @@ function solve_my_rxn(rn, c, s°, iter)
         for m in 1:r
             if(e[m] == minimum(e))
                 s = s .+ δ[m, :]
+                break
             end
         end
-        state = [state; s']
+        state = [state; s'] #appends the current state to the array of states
     end
     return state end
 
