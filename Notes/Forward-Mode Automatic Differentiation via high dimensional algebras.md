@@ -811,9 +811,11 @@ directional derivatives to be computed simultaniously, giving a method for
 computing the Jacobian of a function $f$ on a single input. This is a direct
 application of using the compiler as part of a mathematical framework.
 
-## References
+# References
 - John L. Bell, *An Invitation to Smooth Infinitesimal Analysis*,
   http://publish.uwo.ca/~jbell/invitation%20to%20SIA.pdf
 - Bell, John L. *A Primer of Infinitesimal Analysis*
 - Nocedal & Wright, *Numerical Optimization*, Chapter 8
 - Griewank & Walther, *Evaluating Derivatives*
+
+
