@@ -55,7 +55,7 @@ arr_4
 histogram(arr_4)
 
 using BenchmarkTools
-arr_4 = []
+/+arr_4 = []
 function exp_ours!(arr_4)
     for _ in 1:10000
         push!(arr_4, rand(Exponential(0.5)))

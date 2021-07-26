@@ -817,5 +817,3 @@ application of using the compiler as part of a mathematical framework.
 - Bell, John L. *A Primer of Infinitesimal Analysis*
 - Nocedal & Wright, *Numerical Optimization*, Chapter 8
 - Griewank & Walther, *Evaluating Derivatives*
-
-
