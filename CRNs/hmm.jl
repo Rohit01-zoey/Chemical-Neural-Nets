@@ -1,6 +1,6 @@
 T = 4
-N = 2
-M = 3
+N = 2#number of hidden states
+M = 3 #numbaer of observable states
 Q = [1, 2] #say H => 1 and C => 2
 V = [0, 1, 2] #small => 0, medium => 1 and  large => 3
 
@@ -29,11 +29,13 @@ end
 
 pr #gives the final probobility.
 
-
+##
+#evrything written  below is genral all that u hv to change is the above
+#and the states poble in the combi !!!!!
 
 #generating all the possible combinations of the given sequence
-N = 4
-combi = reverse.(Iterators.product(fill(1:2, N)...))[:]
+
+combi = reverse.(Iterators.product(fill(1:N, T)...))[:]
 
 prob = []
 for Xs in combi
@@ -47,3 +49,44 @@ end
 prob
 
 norm_prob = prob/sum(prob)
+
+prob_per_step = zeros(length(Q), T)
+for t in 1:T
+    for iter in 1:length(combi)
+        h = combi[iter][t]
+        prob_x = norm_prob[iter]
+        prob_per_step[h, t] += prob_x
+    end
+end
+prob_per_step
+
+#therefore the above matrix tells us the probabilities in the HMM sense
+#now we can get the optimum sequncein the HMM sense
+optimum = []
+for i in 1:T
+    append!(optimum, argmax(prob_per_step[:, i]))
+end
+optimum
+#therfore the above is the hidden sequence most likely to occur
+
+##
+
+#=now we go to find the score for the sequnceof the observables this can be done 2 methods
+1) brute force (2TN^{T}) complexity
+2) Forward algo/α-pass method (N^{2} T) complexity
+=#
+
+#Implementing the forward pass algorithm:
+#this is alpha pass 0
+ω = reshape(B[:, O[1]+1], (1, 2))
+α0 = π .* ω#how to improve this code!!!!!!!!!!!!!!!
+
+
+function α_pass(t, α0, A, B, O, X, N)
+    if t<=1 return α0 end
+    return [(sum(α_pass(t-1, α0, A, B, O, X, N) * A)) * (B[X[i], O[t]+1])  for i in 1:N]
+end
+α_pass(2, α0, A, B, O, X, N)
+
+
+using LinearAlgebra
