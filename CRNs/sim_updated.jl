@@ -43,10 +43,11 @@ function propensity(k, s, coef)
           @assert length(s)==length(coef)
           prop = k
           for i in 1:length(s)
-              prop *= choose(s[i], coef[i])
+              prop *= choose(s[i], coef[i]) * factorial(coef[i]) # to update factorial function
           end
           return prop
 end
+#s!/(s-c)! (c - coefficient)
 
 function exponential_my(λ)
     return -log(1-rand(Uniform(0, 1)))/λ
