@@ -99,7 +99,7 @@ POλ = γ/sum(γ)
 
 ##
 #now we can proceed to implement the β-pass algorithm -
-β_T = ones((N,1))
+β_T = vec(ones((N,1)))
 #scaling the β vector
 β_T = β_T/sum(β_T)
 
@@ -136,15 +136,15 @@ function α_pass_up_up(T, α0, A, B, O, Q, N)
     append!(α, [α0])
     for t in 2:T
         ϕ = []
-        for i in 1:N
+        for h in 1:N
             s = 0
-            for j in 1:N
-                s += α[t-1][j] * A[j, i]
+            for g in 1:N
+                s += α[t-1][g] * A[g, h]
             end
-            s *= B[i, O[t]+1]
+            s *= B[h, O[t]+1]
             append!(ϕ, s)
         end
-        append!(α, [ϕ])
+        append!(α, [ϕ/sum(ϕ)])
     end
 
     return α
@@ -171,23 +171,31 @@ function β_pass_up_up(β_T, A, B, O, Q, N, T)
     β = []
     append!(β, [β_T])
     for t in T-1:-1:1
-        Δ = []
-        for i in 1:N
+        Δ = zeros(N)
+        for h in 1:N
             s = 0
-            for j in 1:N
-                s += A[i, j]*B[j, O[t+1]+1]*β[T-t][j]
+            for g in 1:N
+                s += A[h, g]*B[g, O[t+1]+1]*β[T-t][g]
             end
-            append!(Δ, s)
+            #append!(Δ, s)
+            Δ[h] += s
         end
-        append!(β, [Δ])
+        append!(β, [Δ/sum(Δ)])
     end
     return β
 end
 β = β_pass_up_up(β_T, A, B, O, Q, N, T)
 
-function E_step_γ(α, β)
+function E_step_γ(α, β, T, N)
     #returns the gamma vector for the given HMM
-    return [α[i] .* β[i]/sum(α[i] .* β[i]) for i in 1:T]
+    γ = zeros(T, N)
+    for l in 1:T
+        for h in 1:N
+            γ[l, h] += (α[l][h]*β[l][h])
+            γ[l, h] /= (sum(α[l].*β[l]))
+        end
+    end
+    return γ
 end
 
 
@@ -207,6 +215,8 @@ function E_step_ζ(A, B, α, β, T, N)
     return ζ
 end
 
+
+
 function M_step_θ(N, M, T, ζ)
     θ = zeros((N, N))
     for g in 1:N
@@ -218,19 +228,18 @@ function M_step_θ(N, M, T, ζ)
 end
 
 function M_step_ψ(N, M, T, γ_norm)
-    δ = zeros((M, M))
+    δ = zeros(M, M)
     for i in 1:M
         δ[i, i] = 1
     end
     ψ = zeros(N, M)
     for h in 1:N
         for w in 1:M
-            ψ[h, w] += sum(γ_norm[l][h] * δ[w, O[l]+1] for l in 1:T)/sum(γ_norm[l][h] for l in 1:T)
+            ψ[h, w] += sum(γ_norm[l, h] * δ[w, O[l]+1] for l in 1:T)/sum(γ_norm[l, h] for l in 1:T)
         end
     end
     return ψ
 end
-
 
 #so we have defined all the functions we need to perform the iterations on the HMM we have.
 ##
@@ -292,10 +301,10 @@ B = ψ
 
 function solve_my_HMM(A, B, T, N, M, π, O, Q, iter)
     ω = reshape(B[:, O[1]+1], (1, 2))
-    α0 = π .* ω
+    α0 = vec(π .* ω)
     α0 = α0/sum(α0)
 
-    β_T = ones((N,1))
+    β_T = vec(ones((N,1)))
     #scaling the β vector
     β_T = β_T/sum(β_T)
 
@@ -303,13 +312,13 @@ function solve_my_HMM(A, B, T, N, M, π, O, Q, iter)
 
         α = α_pass_up_up(T, α0, A, B, O, Q, N)
         β = [β_pass_up_up(β_T, A, B, O, Q, N, T)[i] for i in T:-1:1] #reversing the order
-        γ = E_step_γ(α, β)
+        γ = E_step_γ(α, β, T, N)
         ζ = E_step_ζ(A, B, α, β, T, N)
         θ = M_step_θ(N, M, T, ζ)
         ψ = M_step_ψ(N, M, T, γ)
         A = θ
         B = ψ
-        print("-----iter no ", i, " complete--left", iter-i, "----\n")
+        print("-----iter no ", i, " complete--left ", iter-i, "----\n")
     end
     return A, B
 end
@@ -329,6 +338,7 @@ B = [0.5 0.5; 0.5 0.5]
 
 #now say we observe the follwing sequence :
 O = [0, 0, 0, 1, 0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 1, 1]
+#O= [0, 1, 0, 1, 0 ]
 T = length(O)
 #given an input as a sequnce of hidden states whats the probability that this  sequnce of hidden states
 #occured to give us what we observed
