@@ -45,3 +45,6 @@ $\alpha_{t}(i)$ = Pr($\mathcal{O}_0, \mathcal{O}_1......, x_t = q_i|\lambda$)
 $\alpha_0(i) = \pi_i b_i(\mathcal{O}_0)$
 
 Refer to [this](https://drive.google.com/viewerng/viewer?url=https%3A//www.cs.sjsu.edu/%7Estamp/RUA/HMM.pdf&embedded=true)
+
+
+Also refer to [this](http://www.adeveloperdiary.com/data-science/machine-learning/forward-and-backward-algorithm-in-hidden-markov-model/)
