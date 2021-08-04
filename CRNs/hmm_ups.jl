@@ -136,8 +136,8 @@ function solve_my_HMM(A, B, T, N, M, π, O, Q, iter)
         ω = reshape(B[:, O[1]+1], (1, 2))
         α0 = vec(π .* ω)
         α0 = α0/sum(α0)
-        α = α_up_up_up(T, α0, A, B, O, Q, N)
-        β = [β_up_up_up(β_T, A, B, O, Q, N, T)[i] for i in T:-1:1] #reversing the order
+        α = α_pass_up_up(T, α0, A, B, O, Q, N)
+        β = [β_pass_up_up(β_T, A, B, O, Q, N, T)[i] for i in T:-1:1] #reversing the order
         γ = E_step_γ(α, β, T, N)
         ζ = E_step_ζ(A, B, α, β, T, N)
         θ = M_step_θ(N, M, T, ζ)
@@ -170,7 +170,7 @@ Q = [1, 2] #say H => 1 and C => 2
 V = [0, 1] #small => 0, medium => 1 and  large => 3
 
 A = [0.6 0.4 ; 0.3 0.7]
-B = [0.2 0.8; 0.5 0.5]
+B = [0.5 0.5 ; 0.5 0.5]
 
 π = [0.6 0.4]
 
